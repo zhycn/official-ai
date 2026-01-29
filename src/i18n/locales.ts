@@ -50,6 +50,14 @@ export interface Translations {
   toolCard: {
     favorite: string;
   };
+  
+  // 404 页面
+  notFound: {
+    title: string;
+    description: string;
+    backHome: string;
+    goBack: string;
+  };
 }
 
 export const translations: Record<Locale, Translations> = {
@@ -58,7 +66,7 @@ export const translations: Record<Locale, Translations> = {
       login: '登录',
     },
     search: {
-      placeholder: '搜索工具...',
+      placeholder: '搜索官方AI工具...',
       noResults: '未找到匹配的工具',
       clear: '清除搜索',
     },
@@ -69,8 +77,9 @@ export const translations: Record<Locale, Translations> = {
       toggle: '点击切换主题：亮色 / 暗色 / 自动',
     },
     page: {
-      title: 'Skills',
+      title: 'Official AI',
       stats: '已收录',
+      statsSearch: '搜索结果',
       items: '项',
     },
     pagination: {
@@ -80,20 +89,26 @@ export const translations: Record<Locale, Translations> = {
     },
     footer: {
       version: 'online v0.1.0',
-      copyright: '© 2025 skill0',
-      builtBy: 'Built by atypica.ai',
+      copyright: '© 2026 Official AI',
+      builtBy: 'Built by astro.build',
     },
     toolCard: {
       favorite: '收藏',
     },
+    notFound: {
+      title: '页面未找到',
+      description: '抱歉，您访问的页面不存在或已被移除。',
+      backHome: '返回首页',
+      goBack: '返回上一页',
+    },
   },
   en: {
     nav: {
-      login: 'Sign In',
-      submit: 'Submit',
+      login: 'Login',
+      submit: 'Submit Link',
     },
     search: {
-      placeholder: 'Search tools...',
+      placeholder: 'Search Official AI tools...',
       noResults: 'No matching tools found',
       clear: 'Clear search',
     },
@@ -104,9 +119,9 @@ export const translations: Record<Locale, Translations> = {
       toggle: 'Click to toggle theme: Light / Dark / Auto',
     },
     page: {
-      title: 'Skills',
-      stats: 'Collected',
-      statsSearch: 'Found',
+      title: 'Official AI',
+      stats: 'Browse the official AI tools directory',
+      statsSearch: 'Search for',
       items: 'items',
     },
     pagination: {
@@ -116,11 +131,17 @@ export const translations: Record<Locale, Translations> = {
     },
     footer: {
       version: 'online v0.1.0',
-      copyright: '© 2025 skill0',
-      builtBy: 'Built by atypica.ai',
+      copyright: '© 2026 Official AI',
+      builtBy: 'Built by astro.build',
     },
     toolCard: {
       favorite: 'Favorite',
+    },
+    notFound: {
+      title: 'Page Not Found',
+      description: 'Sorry, the page you are looking for does not exist or has been removed.',
+      backHome: 'Back to Home',
+      goBack: 'Go Back',
     },
   },
 };
