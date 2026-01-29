@@ -8,21 +8,30 @@ import { getLocale, t } from '../i18n/locales';
 const locale = getLocale();
 ---
 
-<nav class="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-800/50 shadow-sm">
+<nav class="sticky top-0 z-50 bg-white/70 dark:bg-gray-900/70 backdrop-blur-xl border-b border-gray-200/40 dark:border-gray-800/40 shadow-sm shadow-gray-900/5 dark:shadow-gray-900/20">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex items-center justify-between h-16">
+    <div class="flex items-center justify-between h-16 sm:h-18">
       <!-- Logo -->
       <div class="flex-shrink-0">
-        <a href="/" class="text-xl font-bold text-gray-900 dark:text-white">
-          skill<span class="underline">0</span>_
+        <a href="/" class="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white transition-colors duration-300 hover:text-blue-600 dark:hover:text-blue-400">
+          skill<span class="underline decoration-2 decoration-blue-500/60 underline-offset-4">0</span>_
         </a>
       </div>
 
       <!-- 搜索框 -->
-      <SearchBox />
+      <div class="hidden md:block flex-1 max-w-xl mx-4">
+        <SearchBox />
+      </div>
 
       <!-- 右侧功能区 -->
-      <div class="flex items-center space-x-3">
+      <div class="flex items-center gap-2 sm:gap-3">
+        <!-- 移动端搜索按钮 -->
+        <button id="mobile-search-toggle" class="md:hidden p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 hover:scale-105 active:scale-95 touch-manipulation" aria-label="搜索">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+        </button>
+
         <!-- 主题切换按钮 -->
         <ThemeToggle />
 
@@ -30,11 +39,33 @@ const locale = getLocale();
         <LanguageToggle />
 
         <!-- 登录按钮 -->
-        <button class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95" data-i18n="nav.login">
+        <button class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100/80 dark:bg-gray-800/80 backdrop-blur-sm hover:bg-gray-200/80 dark:hover:bg-gray-700/80 rounded-xl transition-all duration-300 hover:scale-105 active:scale-95 hover:shadow-md touch-manipulation" data-i18n="nav.login">
           {t('nav.login', locale)}
         </button>
       </div>
     </div>
+    
+    <!-- 移动端搜索框 -->
+    <div id="mobile-search-container" class="md:hidden pb-4 hidden">
+      <SearchBox />
+    </div>
   </div>
 </nav>
+
+<script is:inline>
+  (function() {
+    const mobileSearchToggle = document.getElementById('mobile-search-toggle');
+    const mobileSearchContainer = document.getElementById('mobile-search-container');
+    
+    if (mobileSearchToggle && mobileSearchContainer) {
+      mobileSearchToggle.addEventListener('click', function() {
+        mobileSearchContainer.classList.toggle('hidden');
+        const searchInput = document.getElementById('search-input');
+        if (searchInput && !mobileSearchContainer.classList.contains('hidden')) {
+          setTimeout(() => searchInput.focus(), 100);
+        }
+      });
+    }
+  })();
+</script>
 

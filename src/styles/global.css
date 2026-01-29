@@ -2,3 +2,121 @@
 
 /* Tailwind CSS 4.x: 配置 dark mode 使用 class 策略而不是媒体查询 */
 @custom-variant dark (&&:where(.dark, .dark *));
+
+/* 全局优化样式 */
+:root {
+  /* 平滑滚动 */
+  scroll-behavior: smooth;
+  
+  /* 字体渲染优化 */
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  
+  /* 选择文本颜色 */
+  --selection-bg: rgba(59, 130, 246, 0.2);
+  --selection-text: rgb(59, 130, 246);
+}
+
+/* 文本选择样式 */
+::selection {
+  background-color: var(--selection-bg);
+  color: var(--selection-text);
+}
+
+.dark ::selection {
+  background-color: rgba(96, 165, 250, 0.3);
+  color: rgb(147, 197, 253);
+}
+
+/* 滚动条样式优化 */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(156, 163, 175, 0.4);
+  border-radius: 5px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(156, 163, 175, 0.6);
+  background-clip: padding-box;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: rgba(75, 85, 99, 0.5);
+  background-clip: padding-box;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: rgba(107, 114, 128, 0.7);
+  background-clip: padding-box;
+}
+
+/* 焦点样式优化 */
+*:focus-visible {
+  outline: 2px solid rgb(59, 130, 246);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+.dark *:focus-visible {
+  outline-color: rgb(96, 165, 250);
+}
+
+/* 平滑过渡 */
+* {
+  transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  transition-duration: 150ms;
+}
+
+/* 禁用过渡的元素 */
+.no-transition,
+.no-transition * {
+  transition: none !important;
+}
+
+/* 搜索高亮样式 */
+.highlight {
+  font-weight: 600;
+  color: rgb(59, 130, 246);
+  background-color: rgba(59, 130, 246, 0.12);
+  padding: 0 3px;
+  border-radius: 3px;
+}
+
+.dark .highlight {
+  color: rgb(96, 165, 250);
+  background-color: rgba(96, 165, 250, 0.15);
+}
+
+/* 触摸优化 */
+.touch-manipulation {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 响应式字体大小优化 */
+@media (max-width: 640px) {
+  html {
+    font-size: 15px;
+  }
+}
+
+/* 移动端优化 */
+@media (max-width: 640px) {
+  /* 增大触摸目标 */
+  button, a {
+    min-height: 44px;
+    min-width: 44px;
+  }
+}

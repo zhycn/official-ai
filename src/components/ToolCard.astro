@@ -13,17 +13,17 @@ const { id, name, description, url } = Astro.props;
   href={url}
   target="_blank"
   rel="noopener noreferrer"
-  class="block p-5 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-lg dark:hover:shadow-blue-500/10 transition-all duration-200 group hover:-translate-y-0.5"
+  class="group relative block p-5 sm:p-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 dark:border-gray-700/60 hover:border-blue-400/60 dark:hover:border-blue-500/40 hover:shadow-xl hover:shadow-blue-500/5 dark:hover:shadow-blue-500/10 transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.02] before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-blue-50/0 before:via-blue-50/0 before:to-blue-50/0 hover:before:from-blue-50/50 hover:before:via-blue-50/30 hover:before:to-transparent dark:hover:before:from-blue-950/20 dark:hover:before:via-blue-950/10 dark:hover:before:to-transparent before:transition-all before:duration-300 before:-z-10"
 >
-  <div class="flex items-start justify-between mb-3">
+  <div class="relative z-10 flex items-start justify-between mb-3 sm:mb-4">
     <div class="flex items-center gap-3 flex-1 min-w-0">
-      <span class="flex-shrink-0 w-2.5 h-2.5 bg-gradient-to-br from-green-400 to-green-600 rounded-full mt-1 shadow-sm"></span>
-      <h3 class="font-semibold text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200 text-base">
+      <span class="flex-shrink-0 w-2.5 h-2.5 bg-gradient-to-br from-emerald-400 via-green-500 to-emerald-600 rounded-full mt-1 shadow-sm shadow-green-500/50 ring-1 ring-green-500/20"></span>
+      <h3 class="font-semibold text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300 text-base sm:text-lg leading-snug">
         {name}
       </h3>
     </div>
     <button
-      class="flex-shrink-0 p-1.5 text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200"
+      class="flex-shrink-0 p-1.5 sm:p-2 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50/80 dark:hover:bg-red-900/20 rounded-lg transition-all duration-300 active:scale-95 touch-manipulation"
       aria-label="收藏"
       onclick="event.preventDefault(); event.stopPropagation();"
     >
@@ -32,7 +32,7 @@ const { id, name, description, url } = Astro.props;
       </svg>
     </button>
   </div>
-  <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
+  <p class="relative z-10 text-sm sm:text-base text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
     {description}
   </p>
 </a>

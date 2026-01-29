@@ -6,11 +6,11 @@ const locale = getLocale();
 const placeholder = locale === 'zh' ? '搜索工具...' : 'Search tools...';
 ---
 
-<div class="relative flex-1 max-w-xl mx-4" id="search-container">
+<div class="relative w-full" id="search-container">
   <div class="relative">
     <!-- 搜索图标 -->
-    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-      <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
+      <svg class="h-5 w-5 text-gray-400 dark:text-gray-500 transition-colors duration-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
       </svg>
     </div>
@@ -21,16 +21,16 @@ const placeholder = locale === 'zh' ? '搜索工具...' : 'Search tools...';
       type="text"
       placeholder={placeholder}
       autocomplete="off"
-      class="block w-full pl-10 pr-20 py-2.5 border border-gray-300 dark:border-gray-700 rounded-xl bg-white dark:bg-gray-800 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent shadow-sm hover:shadow-md transition-all duration-200"
+      class="block w-full pl-12 pr-24 sm:pr-28 py-3 sm:py-3.5 text-sm sm:text-base border border-gray-300/60 dark:border-gray-700/60 rounded-2xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500/50 dark:focus:ring-blue-400/50 focus:border-blue-400/60 dark:focus:border-blue-500/40 shadow-sm hover:shadow-md focus:shadow-lg transition-all duration-300"
     />
     
     <!-- 右侧操作区 -->
-    <div class="absolute inset-y-0 right-0 flex items-center pr-2 gap-1">
+    <div class="absolute inset-y-0 right-0 flex items-center pr-3 gap-2">
       <!-- 清除按钮 -->
       <button
         id="search-clear"
         type="button"
-        class="hidden p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        class="hidden p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 rounded-lg hover:bg-gray-100/80 dark:hover:bg-gray-700/80 transition-all duration-300 active:scale-95 touch-manipulation"
         aria-label={locale === 'zh' ? '清除搜索' : 'Clear search'}
       >
         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -39,14 +39,14 @@ const placeholder = locale === 'zh' ? '搜索工具...' : 'Search tools...';
       </button>
       
       <!-- 键盘快捷键提示 -->
-      <kbd class="hidden sm:flex px-2 py-1 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded">⌘K</kbd>
+      <kbd class="hidden sm:flex items-center px-2.5 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-400 bg-gray-100/80 dark:bg-gray-700/80 backdrop-blur-sm border border-gray-300/60 dark:border-gray-600/60 rounded-lg shadow-sm">⌘K</kbd>
     </div>
   </div>
   
   <!-- 搜索建议下拉框 -->
   <div
     id="search-suggestions"
-    class="hidden absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl shadow-xl max-h-96 overflow-y-auto z-50 backdrop-blur-sm"
+    class="hidden absolute top-full left-0 right-0 mt-2 bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl border border-gray-200/60 dark:border-gray-700/60 rounded-2xl shadow-2xl shadow-gray-900/10 dark:shadow-gray-900/30 max-h-96 overflow-y-auto z-50"
   >
     <div id="suggestions-list" class="py-2">
       <!-- 建议项将动态插入这里 -->
@@ -74,24 +74,31 @@ const placeholder = locale === 'zh' ? '搜索工具...' : 'Search tools...';
   }
   
   .suggestion-item {
-    transition: all 0.15s ease;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   }
   
   .suggestion-item:hover {
     background-color: rgba(59, 130, 246, 0.08);
+    transform: translateX(2px);
   }
   
   .suggestion-item.active {
     background-color: rgba(59, 130, 246, 0.12);
     border-left-color: rgb(59, 130, 246);
     border-left-width: 3px;
+    transform: translateX(2px);
   }
   
   .highlight {
     font-weight: 600;
     color: rgb(59, 130, 246);
-    background-color: rgba(59, 130, 246, 0.1);
-    padding: 0 2px;
-    border-radius: 2px;
+    background-color: rgba(59, 130, 246, 0.12);
+    padding: 0 3px;
+    border-radius: 3px;
+  }
+  
+  .dark .highlight {
+    color: rgb(96, 165, 250);
+    background-color: rgba(96, 165, 250, 0.15);
   }
 </style>
