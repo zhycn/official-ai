@@ -1,0 +1,208 @@
+---
+// 三模式主题切换组件：点击在亮色、暗色、自动之间循环切换
+---
+
+<button
+  id="theme-toggle"
+  type="button"
+  class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 hover:scale-105 active:scale-95 relative"
+  aria-label="切换主题"
+  title="点击切换主题：亮色 / 暗色 / 自动"
+>
+  <!-- 亮色模式图标 -->
+  <svg id="theme-icon-light" class="h-5 w-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+  </svg>
+  <!-- 暗色模式图标 -->
+  <svg id="theme-icon-dark" class="h-5 w-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+  </svg>
+  <!-- 自动模式图标 -->
+  <svg id="theme-icon-auto" class="h-5 w-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+  </svg>
+</button>
+
+<script is:inline>
+  (function() {
+    // 主题顺序：light -> dark -> auto -> light...
+    const themes = ['light', 'dark', 'auto'];
+    
+    // 获取当前主题
+    function getCurrentTheme() {
+      return localStorage.getItem('theme') || 'auto';
+    }
+
+    // 获取下一个主题
+    function getNextTheme(currentTheme) {
+      const currentIndex = themes.indexOf(currentTheme);
+      const nextIndex = (currentIndex + 1) % themes.length;
+      return themes[nextIndex];
+    }
+
+    // 应用主题
+    function applyTheme(theme) {
+      const html = document.documentElement;
+      
+      console.log('应用主题:', theme);
+      console.log('应用前 HTML classes:', html.className);
+      
+      // 先移除 dark 类，然后根据需要添加
+      html.classList.remove('dark');
+      
+      if (theme === 'auto') {
+        // 自动模式：根据系统偏好设置
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        console.log('自动模式，系统偏好暗色:', prefersDark);
+        if (prefersDark) {
+          html.classList.add('dark');
+        }
+        localStorage.setItem('theme', 'auto');
+      } else if (theme === 'dark') {
+        html.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
+      } else {
+        // light 模式，已经移除了 dark 类
+        localStorage.setItem('theme', 'light');
+      }
+      
+      console.log('应用后 HTML classes:', html.className);
+      console.log('是否有 dark 类:', html.classList.contains('dark'));
+      
+      updateThemeIcon(theme);
+      
+      // 触发自定义事件，通知其他组件主题已更改
+      window.dispatchEvent(new CustomEvent('themechange', { detail: { theme: theme } }));
+    }
+
+    // 更新主题图标
+    function updateThemeIcon(theme) {
+      const lightIcon = document.getElementById('theme-icon-light');
+      const darkIcon = document.getElementById('theme-icon-dark');
+      const autoIcon = document.getElementById('theme-icon-auto');
+      
+      // 隐藏所有图标
+      if (lightIcon) lightIcon.classList.add('hidden');
+      if (darkIcon) darkIcon.classList.add('hidden');
+      if (autoIcon) autoIcon.classList.add('hidden');
+      
+      // 显示当前主题图标
+      if (theme === 'auto') {
+        if (autoIcon) autoIcon.classList.remove('hidden');
+      } else if (theme === 'dark') {
+        if (darkIcon) darkIcon.classList.remove('hidden');
+      } else {
+        if (lightIcon) lightIcon.classList.remove('hidden');
+      }
+    }
+
+    // 切换主题
+    function toggleTheme() {
+      const currentTheme = getCurrentTheme();
+      const nextTheme = getNextTheme(currentTheme);
+      
+      console.log('切换主题:', currentTheme, '->', nextTheme);
+      
+      applyTheme(nextTheme);
+      
+      // 如果切换到自动模式，需要监听系统主题变化
+      if (nextTheme === 'auto') {
+        setupAutoThemeListener();
+      } else {
+        // 如果切换到非自动模式，移除监听器
+        if (window.__themeMediaQuery && window.__themeMediaQueryHandler) {
+          if (window.__themeMediaQuery.removeEventListener) {
+            window.__themeMediaQuery.removeEventListener('change', window.__themeMediaQueryHandler);
+          } else if (window.__themeMediaQuery.removeListener) {
+            window.__themeMediaQuery.removeListener(window.__themeMediaQueryHandler);
+          }
+        }
+      }
+    }
+
+    // 设置自动主题监听器
+    function setupAutoThemeListener() {
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const handleChange = function(e) {
+        if (getCurrentTheme() === 'auto') {
+          const html = document.documentElement;
+          if (e.matches) {
+            html.classList.add('dark');
+          } else {
+            html.classList.remove('dark');
+          }
+        }
+      };
+      
+      // 移除旧的监听器（如果存在）
+      if (window.__themeMediaQuery && window.__themeMediaQueryHandler) {
+        if (window.__themeMediaQuery.removeEventListener) {
+          window.__themeMediaQuery.removeEventListener('change', window.__themeMediaQueryHandler);
+        } else if (window.__themeMediaQuery.removeListener) {
+          window.__themeMediaQuery.removeListener(window.__themeMediaQueryHandler);
+        }
+      }
+      
+      // 添加新的监听器
+      window.__themeMediaQuery = mediaQuery;
+      window.__themeMediaQueryHandler = handleChange;
+      
+      if (mediaQuery.addEventListener) {
+        mediaQuery.addEventListener('change', handleChange);
+      } else if (mediaQuery.addListener) {
+        mediaQuery.addListener(handleChange);
+      }
+    }
+
+    // 初始化主题
+    function initTheme() {
+      const theme = getCurrentTheme();
+      applyTheme(theme);
+      
+      // 如果是自动模式，设置监听器
+      if (theme === 'auto') {
+        setupAutoThemeListener();
+      }
+    }
+
+    // 初始化函数
+    function initThemeToggle() {
+      initTheme();
+      
+      const themeToggle = document.getElementById('theme-toggle');
+      
+      if (!themeToggle) {
+        // 如果元素还没加载，延迟重试
+        setTimeout(initThemeToggle, 100);
+        return;
+      }
+
+      // 绑定点击事件（使用捕获阶段确保事件能触发）
+      themeToggle.addEventListener('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('主题按钮被点击');
+        toggleTheme();
+      }, true);
+      
+      // 也添加一个备用的事件监听器
+      themeToggle.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        console.log('主题按钮被点击 (onclick)');
+        toggleTheme();
+        return false;
+      };
+    }
+
+    // 确保在 DOM 加载后执行
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(initThemeToggle, 50);
+      });
+    } else {
+      // DOM 已经加载完成，立即执行
+      setTimeout(initThemeToggle, 50);
+    }
+  })();
+</script>

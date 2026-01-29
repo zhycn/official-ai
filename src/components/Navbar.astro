@@ -1,9 +1,10 @@
 ---
 // 顶部导航栏组件
 import SearchBox from './SearchBox.astro';
+import ThemeToggle from './ThemeToggle.astro';
 ---
 
-<nav class="sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
+<nav class="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200/50 dark:border-gray-800/50 shadow-sm">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between h-16">
       <!-- Logo -->
@@ -17,27 +18,17 @@ import SearchBox from './SearchBox.astro';
       <SearchBox />
 
       <!-- 右侧功能区 -->
-      <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-3">
         <!-- 主题切换按钮 -->
-        <button
-          id="theme-toggle"
-          type="button"
-          class="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
-          aria-label="切换主题"
-        >
-          <svg id="theme-icon-light" class="h-5 w-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-          </svg>
-          <svg id="theme-icon-dark" class="h-5 w-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-          </svg>
-        </button>
+        <ThemeToggle />
 
         <!-- 语言选择 -->
-        <span class="text-sm text-gray-600 dark:text-gray-300">ZH</span>
+        <div class="px-3 py-1.5 rounded-lg text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-50 dark:bg-gray-800/50 border border-gray-200 dark:border-gray-700">
+          ZH
+        </div>
 
         <!-- 登录按钮 -->
-        <button class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-gray-900 dark:hover:text-white transition-colors">
+        <button class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-all duration-200 hover:scale-105 active:scale-95">
           登录
         </button>
       </div>
@@ -45,42 +36,3 @@ import SearchBox from './SearchBox.astro';
   </div>
 </nav>
 
-<script>
-  // 主题切换功能
-  function toggleTheme() {
-    const html = document.documentElement;
-    const isDark = html.classList.contains('dark');
-    
-    if (isDark) {
-      html.classList.remove('dark');
-      localStorage.setItem('theme', 'light');
-    } else {
-      html.classList.add('dark');
-      localStorage.setItem('theme', 'dark');
-    }
-  }
-
-  // 确保在 DOM 加载后绑定事件
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initThemeToggle);
-  } else {
-    initThemeToggle();
-  }
-
-  function initThemeToggle() {
-    const themeToggle = document.getElementById('theme-toggle');
-    if (themeToggle) {
-      // 移除可能存在的旧事件监听器
-      const newToggle = themeToggle.cloneNode(true);
-      themeToggle.parentNode.replaceChild(newToggle, themeToggle);
-      
-      // 绑定新的事件监听器
-      newToggle.addEventListener('click', (e) => {
-        e.preventDefault();
-        toggleTheme();
-      });
-    }
-
-    // 键盘快捷键已由 SearchBox 组件处理
-  }
-</script>

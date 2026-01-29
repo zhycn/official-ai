@@ -5,7 +5,7 @@ const { title = "DevLink Hub" } = Astro.props;
 ---
 
 <!DOCTYPE html>
-<html lang="zh-CN" class="light">
+<html lang="zh-CN">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
@@ -16,8 +16,22 @@ const { title = "DevLink Hub" } = Astro.props;
     <script>
       // 在页面加载前设置主题，避免闪烁
       (function() {
-        const theme = localStorage.getItem('theme') || 'light';
-        document.documentElement.classList.toggle('dark', theme === 'dark');
+        const theme = localStorage.getItem('theme') || 'auto';
+        const html = document.documentElement;
+        
+        if (theme === 'auto') {
+          // 自动模式：根据系统偏好设置
+          const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+          if (prefersDark) {
+            html.classList.add('dark');
+          } else {
+            html.classList.remove('dark');
+          }
+        } else if (theme === 'dark') {
+          html.classList.add('dark');
+        } else {
+          html.classList.remove('dark');
+        }
       })();
     </script>
   </head>

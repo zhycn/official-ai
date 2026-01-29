@@ -19,20 +19,20 @@ const initialTools = toolsData.slice(startIndex, endIndex);
 ---
 
 <Layout title="Skills - skill0">
-  <div class="min-h-screen flex flex-col bg-white dark:bg-gray-900">
+  <div class="min-h-screen flex flex-col bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900">
     <Navbar />
     
-    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
       <!-- 标题信息 -->
-      <div class="mb-8">
-        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Skills</h1>
-        <p class="text-gray-600 dark:text-gray-400">
-          <span id="stats-text">已收录 · <span id="total-count">{toolsData.length}</span> 项</span>
+      <div class="mb-10">
+        <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-3 tracking-tight">Skills</h1>
+        <p class="text-gray-600 dark:text-gray-400 text-lg">
+          <span id="stats-text">已收录 · <span id="total-count" class="font-semibold text-gray-900 dark:text-white">{toolsData.length}</span> 项</span>
         </p>
       </div>
 
       <!-- 工具卡片列表 -->
-      <div id="tools-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+      <div id="tools-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 mb-10">
         {initialTools.map((tool) => (
           <ToolCard
             id={tool.id}
@@ -184,24 +184,24 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     const endIndex = startIndex + ITEMS_PER_PAGE;
     const pageTools = tools.slice(startIndex, endIndex);
 
-    container.innerHTML = pageTools
+        container.innerHTML = pageTools
       .map(
         (tool) => `
       <a
         href="${escapeHtml(tool.url)}"
         target="_blank"
         rel="noopener noreferrer"
-        class="block p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-md transition-all group"
+        class="block p-5 bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-lg dark:hover:shadow-blue-500/10 transition-all duration-200 group hover:-translate-y-0.5"
       >
-        <div class="flex items-start justify-between mb-2">
-          <div class="flex items-center gap-2 flex-1 min-w-0">
-            <span class="flex-shrink-0 w-2 h-2 bg-green-500 rounded-full mt-1.5"></span>
-            <h3 class="font-semibold text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+        <div class="flex items-start justify-between mb-3">
+          <div class="flex items-center gap-3 flex-1 min-w-0">
+            <span class="flex-shrink-0 w-2.5 h-2.5 bg-gradient-to-br from-green-400 to-green-600 rounded-full mt-1 shadow-sm"></span>
+            <h3 class="font-semibold text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200 text-base">
               ${escapeHtml(tool.name)}
             </h3>
           </div>
           <button
-            class="flex-shrink-0 p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+            class="flex-shrink-0 p-1.5 text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200"
             aria-label="收藏"
             onclick="event.preventDefault(); event.stopPropagation();"
           >
@@ -210,7 +210,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
             </svg>
           </button>
         </div>
-        <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+        <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
           ${escapeHtml(tool.description)}
         </p>
       </a>
@@ -246,14 +246,14 @@ const initialTools = toolsData.slice(startIndex, endIndex);
 
     // 创建分页容器
     const paginationDiv = document.createElement('div');
-    paginationDiv.className = 'flex items-center justify-between mt-8';
-    
-    const pageInfo = document.createElement('div');
-    pageInfo.className = 'text-sm text-gray-600 dark:text-gray-400';
-    pageInfo.textContent = `页 ${page} / ${totalPages}`;
+    paginationDiv.className = 'flex items-center justify-between mt-10 pt-6 border-t border-gray-200 dark:border-gray-800';
     
     const buttonContainer = document.createElement('div');
-    buttonContainer.className = 'flex gap-2';
+    buttonContainer.className = 'flex gap-3';
+    
+    const pageInfo = document.createElement('div');
+    pageInfo.className = 'text-sm font-medium text-gray-600 dark:text-gray-400';
+    pageInfo.innerHTML = `页 <span class="text-gray-900 dark:text-white">${page}</span> / <span class="text-gray-900 dark:text-white">${totalPages}</span>`;
     
     // 创建上一页按钮
     const prevBtn = document.createElement('button');
@@ -371,18 +371,18 @@ const initialTools = toolsData.slice(startIndex, endIndex);
           .map(
             (tool, index) => `
           <div
-            class="suggestion-item px-4 py-3 cursor-pointer flex items-start gap-3"
+            class="suggestion-item px-4 py-3 cursor-pointer flex items-start gap-3 border-l-2 border-transparent"
             data-index="${index}"
             data-name="${escapeHtml(tool.name)}"
           >
-            <svg class="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <svg class="w-5 h-5 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
             <div class="flex-1 min-w-0">
-              <div class="font-medium text-gray-900 dark:text-white">
+              <div class="font-semibold text-gray-900 dark:text-white text-sm">
                 ${highlightText(tool.name, query)}
               </div>
-              <div class="text-sm text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">
+              <div class="text-xs text-gray-500 dark:text-gray-400 line-clamp-1 mt-1">
                 ${highlightText(tool.description, query)}
               </div>
             </div>
