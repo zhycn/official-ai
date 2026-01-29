@@ -1,15 +1,18 @@
 ---
+import { getLocale, t } from '../i18n/locales';
+
 interface Props {
   currentPage: number;
   totalPages: number;
 }
 
 const { currentPage, totalPages } = Astro.props;
+const locale = getLocale();
 ---
 
 <div class="flex items-center justify-between mt-10 pt-6 border-t border-gray-200 dark:border-gray-800">
   <div class="text-sm font-medium text-gray-600 dark:text-gray-400">
-    页 <span class="text-gray-900 dark:text-white">{currentPage}</span> / <span class="text-gray-900 dark:text-white">{totalPages}</span>
+    {t('pagination.page', locale)} <span class="text-gray-900 dark:text-white">{currentPage}</span> / <span class="text-gray-900 dark:text-white">{totalPages}</span>
   </div>
   <div class="flex gap-3">
     <button
@@ -17,14 +20,14 @@ const { currentPage, totalPages } = Astro.props;
       disabled={currentPage === 1}
       class="px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-600 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 dark:disabled:hover:bg-gray-800 dark:disabled:hover:border-gray-700 transition-all duration-200 hover:scale-105 active:scale-95"
     >
-      上一页
+      {t('pagination.prev', locale)}
     </button>
     <button
       id="next-page"
       disabled={currentPage === totalPages}
       class="px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 hover:border-gray-400 dark:hover:border-gray-600 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 dark:disabled:hover:bg-gray-800 dark:disabled:hover:border-gray-700 transition-all duration-200 hover:scale-105 active:scale-95"
     >
-      下一页
+      {t('pagination.next', locale)}
     </button>
   </div>
 </div>

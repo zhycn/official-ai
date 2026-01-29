@@ -1,11 +1,15 @@
 ---
 // src/layouts/Layout.astro
 import "../styles/global.css";
+import { getLocale } from '../i18n/locales';
+
 const { title = "DevLink Hub" } = Astro.props;
+const locale = getLocale();
+const htmlLang = locale === 'zh' ? 'zh-CN' : 'en';
 ---
 
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang={htmlLang}>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />

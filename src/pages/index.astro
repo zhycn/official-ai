@@ -5,8 +5,10 @@ import ToolCard from '../components/ToolCard.astro';
 import Pagination from '../components/Pagination.astro';
 import Footer from '../components/Footer.astro';
 import toolsData from '../../public/data/tools.json';
+import { getLocale, t } from '../i18n/locales';
 
 const ITEMS_PER_PAGE = 24;
+const locale = getLocale();
 
 // 从 URL 读取页码（服务端）
 const urlPageParam = Astro.url.searchParams.get('page');
@@ -25,9 +27,9 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 w-full">
       <!-- 标题信息 -->
       <div class="mb-10">
-        <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-3 tracking-tight">Skills</h1>
+        <h1 class="text-4xl font-bold text-gray-900 dark:text-white mb-3 tracking-tight">{t('page.title', locale)}</h1>
         <p class="text-gray-600 dark:text-gray-400 text-lg">
-          <span id="stats-text">已收录 · <span id="total-count" class="font-semibold text-gray-900 dark:text-white">{toolsData.length}</span> 项</span>
+          <span id="stats-text">{t('page.stats', locale)} · <span id="total-count" class="font-semibold text-gray-900 dark:text-white">{toolsData.length}</span> {t('page.items', locale)}</span>
         </p>
       </div>
 
@@ -57,6 +59,37 @@ const initialTools = toolsData.slice(startIndex, endIndex);
 </Layout>
 
 <script define:vars={{ toolsData, ITEMS_PER_PAGE }}>
+  // 国际化翻译
+  const translations = {
+    zh: {
+      page: '页',
+      prev: '上一页',
+      next: '下一页',
+      stats: '已收录',
+      items: '项',
+      noResults: '未找到匹配的工具'
+    },
+    en: {
+      page: 'Page',
+      prev: 'Previous',
+      next: 'Next',
+      stats: 'Collected',
+      items: 'items',
+      noResults: 'No matching tools found'
+    }
+  };
+  
+  // 获取当前语言
+  function getLocale() {
+    return localStorage.getItem('locale') || 'zh';
+  }
+  
+  // 获取翻译
+  function t(key) {
+    const locale = getLocale();
+    return translations[locale]?.[key] || key;
+  }
+  
   // 使用动态导入加载 Fuse.js
   let Fuse;
   let currentPage = 1;
@@ -202,7 +235,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
           </div>
           <button
             class="flex-shrink-0 p-1.5 text-gray-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200"
-            aria-label="收藏"
+            aria-label="${getLocale() === 'zh' ? '收藏' : 'Favorite'}"
             onclick="event.preventDefault(); event.stopPropagation();"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -226,9 +259,9 @@ const initialTools = toolsData.slice(startIndex, endIndex);
 
   // 更新统计信息
   function updateStats(total) {
-    const totalCount = document.getElementById('total-count');
-    if (totalCount) {
-      totalCount.textContent = total.toString();
+    const statsText = document.getElementById('stats-text');
+    if (statsText) {
+      statsText.innerHTML = `${t('stats')} · <span id="total-count" class="font-semibold text-gray-900 dark:text-white">${total}</span> ${t('items')}`;
     }
   }
 
@@ -253,7 +286,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     
     const pageInfo = document.createElement('div');
     pageInfo.className = 'text-sm font-medium text-gray-600 dark:text-gray-400';
-    pageInfo.innerHTML = `页 <span class="text-gray-900 dark:text-white">${page}</span> / <span class="text-gray-900 dark:text-white">${totalPages}</span>`;
+    pageInfo.innerHTML = `${t('page')} <span class="text-gray-900 dark:text-white">${page}</span> / <span class="text-gray-900 dark:text-white">${totalPages}</span>`;
     
     // 创建上一页按钮
     const prevBtn = document.createElement('button');
@@ -362,7 +395,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       if (suggestions.length === 0) {
         suggestionsList.innerHTML = `
           <div class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
-            未找到匹配的工具
+            ${t('noResults')}
           </div>
         `;
         suggestionsContainer.classList.remove('hidden');
