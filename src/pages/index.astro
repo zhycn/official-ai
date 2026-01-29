@@ -30,8 +30,17 @@ const initialTools = toolsData.slice(startIndex, endIndex);
         <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4 tracking-tight leading-tight">
           {t('page.title', locale)}
         </h1>
+        <p class="text-sm sm:text-base text-gray-500 dark:text-gray-400 mb-4 sm:mb-5 italic font-light">
+          Go official. Skip the noise.
+        </p>
         <p class="text-base sm:text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
-          <span id="stats-text">{t('page.stats', locale)} · <span id="total-count" class="font-semibold text-gray-900 dark:text-white">{toolsData.length}</span> {t('page.items', locale)}</span>
+          <span id="stats-text" class="inline-flex items-center gap-2">
+            <span class="px-2.5 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+              {t('page.stats', locale)}
+            </span>
+            <span id="total-count" class="font-semibold text-gray-900 dark:text-white">{toolsData.length}</span>
+            <span>{t('page.items', locale)}</span>
+          </span>
         </p>
       </div>
 
@@ -333,7 +342,11 @@ const initialTools = toolsData.slice(startIndex, endIndex);
         ? (locale === 'zh' ? '找到' : 'Found')
         : (locale === 'zh' ? '已收录' : 'Collected');
       
-      statsText.innerHTML = `${statsLabel} · <span id="total-count" class="font-semibold text-gray-900 dark:text-white">${total}</span> ${t('items')}`;
+      statsText.innerHTML = `<span class="inline-flex items-center gap-2">
+        <span class="px-2.5 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">${statsLabel}</span>
+        <span id="total-count" class="font-semibold text-gray-900 dark:text-white">${total}</span>
+        <span>${t('items')}</span>
+      </span>`;
     }
   }
 

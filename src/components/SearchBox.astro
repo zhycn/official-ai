@@ -137,9 +137,14 @@ const placeholder = locale === 'zh' ? '搜索工具...' : 'Search tools...';
   .dark .search-input:focus,
   .dark .search-input:focus-visible,
   .dark .search-input:focus-within {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5) !important;
-    background-color: rgb(31, 41, 55) !important;
+    box-shadow: 0 4px 12px rgba(255, 90, 80, 0.25) !important;
+    background-color: rgb(17, 24, 39) !important;
+    color: rgb(243, 244, 246) !important;
     outline: none !important;
     border: none !important;
+  }
+  
+  .dark .search-input:focus::placeholder {
+    color: rgb(156, 163, 175) !important;
   }
 </style>
