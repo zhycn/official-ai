@@ -6,11 +6,16 @@
   <button
     id="language-toggle"
     type="button"
-    class="px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-sm font-medium text-gray-600 dark:text-gray-300 bg-gray-50/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-200/60 dark:border-gray-700/60 hover:bg-gray-100/80 dark:hover:bg-gray-700/80 transition-all duration-300 hover:scale-105 active:scale-95 touch-manipulation hover:shadow-md"
+    class="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 touch-manipulation flex items-center justify-center"
     aria-label="切换语言"
     title="切换语言：中文 / English"
   >
-    <span id="language-display">ZH</span>
+    <!-- 语言图标 -->
+    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+    </svg>
+    <!-- 语言文字（移动端隐藏） -->
+    <span id="language-display" class="ml-1.5 hidden sm:inline-block text-xs font-medium">ZH</span>
   </button>
 </div>
 
@@ -44,11 +49,12 @@
     function updatePageText(locale) {
       const translations = {
         zh: {
-          login: '登录',
+          submit: '提交',
           page: '页',
           prev: '上一页',
           next: '下一页',
           stats: '已收录',
+          statsSearch: '找到',
           items: '项',
           title: 'Skills',
           version: 'online v0.1.0',
@@ -56,11 +62,12 @@
           builtBy: 'Built by atypica.ai'
         },
         en: {
-          login: 'Sign In',
+          submit: 'Submit',
           page: 'Page',
           prev: 'Previous',
           next: 'Next',
           stats: 'Collected',
+          statsSearch: 'Found',
           items: 'items',
           title: 'Skills',
           version: 'online v0.1.0',
@@ -71,9 +78,9 @@
       
       const t = translations[locale] || translations.zh;
       
-      // 更新登录按钮
-      const loginBtn = document.querySelector('[data-i18n="nav.login"]');
-      if (loginBtn) loginBtn.textContent = t.login;
+      // 更新提交按钮
+      const submitBtn = document.querySelector('[data-i18n="nav.submit"]');
+      if (submitBtn) submitBtn.textContent = t.submit;
       
       // 更新标题（如果需要）
       const title = document.querySelector('h1');
@@ -81,11 +88,14 @@
         title.textContent = t.title;
       }
       
-      // 更新统计信息
+      // 更新统计信息（检查是否在搜索状态）
       const statsText = document.getElementById('stats-text');
       if (statsText) {
         const totalCount = document.getElementById('total-count')?.textContent || '0';
-        statsText.innerHTML = `${t.stats} · <span id="total-count" class="font-semibold text-gray-900 dark:text-white">${totalCount}</span> ${t.items}`;
+        const searchInput = document.getElementById('search-input');
+        const isSearching = searchInput && searchInput.value.trim() !== '';
+        const statsLabel = isSearching ? t.statsSearch : t.stats;
+        statsText.innerHTML = `${statsLabel} · <span id="total-count" class="font-semibold text-gray-900 dark:text-white">${totalCount}</span> ${t.items}`;
       }
       
       // 更新分页文本
@@ -121,6 +131,13 @@
       const display = document.getElementById('language-display');
       if (display) {
         display.textContent = locale === 'zh' ? 'ZH' : 'EN';
+      }
+      
+      // 更新按钮的 title 属性
+      const button = document.getElementById('language-toggle');
+      if (button) {
+        button.setAttribute('title', locale === 'zh' ? '切换语言：中文 / English' : 'Switch language: 中文 / English');
+        button.setAttribute('aria-label', locale === 'zh' ? '切换语言' : 'Switch language');
       }
     }
     

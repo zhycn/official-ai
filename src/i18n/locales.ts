@@ -6,6 +6,7 @@ export interface Translations {
   // 导航栏
   nav: {
     login: string;
+    submit: string;
   };
   
   // 搜索框
@@ -27,6 +28,7 @@ export interface Translations {
   page: {
     title: string;
     stats: string;
+    statsSearch: string;
     items: string;
   };
   
@@ -88,6 +90,7 @@ export const translations: Record<Locale, Translations> = {
   en: {
     nav: {
       login: 'Sign In',
+      submit: 'Submit',
     },
     search: {
       placeholder: 'Search tools...',
@@ -103,6 +106,7 @@ export const translations: Record<Locale, Translations> = {
     page: {
       title: 'Skills',
       stats: 'Collected',
+      statsSearch: 'Found',
       items: 'items',
     },
     pagination: {

@@ -61,15 +61,21 @@
   background-clip: padding-box;
 }
 
-/* 焦点样式优化 */
-*:focus-visible {
+/* 焦点样式优化 - 排除搜索框 */
+*:focus-visible:not(.search-input) {
   outline: 2px solid rgb(59, 130, 246);
   outline-offset: 2px;
   border-radius: 4px;
 }
 
-.dark *:focus-visible {
+.dark *:focus-visible:not(.search-input) {
   outline-color: rgb(96, 165, 250);
+}
+
+/* 搜索框禁用默认焦点样式 */
+.search-input:focus-visible {
+  outline: none !important;
+  border: none !important;
 }
 
 /* 平滑过渡 */

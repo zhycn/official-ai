@@ -206,7 +206,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
   }
 
   // 渲染工具卡片
-  function renderTools(tools, page, updateURL = true) {
+  function renderTools(tools, page, updateURL = true, isSearching = false) {
     const container = document.getElementById('tools-container');
     const paginationContainer = document.getElementById('pagination-container');
     if (!container) return;
@@ -240,8 +240,8 @@ const initialTools = toolsData.slice(startIndex, endIndex);
         paginationContainer.innerHTML = '';
       }
       
-      // 更新统计信息
-      updateStats(0);
+      // 更新统计信息（搜索状态）
+      updateStats(0, isSearching);
       return;
     }
 
@@ -288,8 +288,8 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       )
       .join('');
 
-    // 更新统计信息
-    updateStats(tools.length);
+    // 更新统计信息（根据是否在搜索状态显示不同文本）
+    updateStats(tools.length, isSearching);
     // 更新分页
     updatePagination(page, totalPages, updateURL);
     
@@ -325,10 +325,15 @@ const initialTools = toolsData.slice(startIndex, endIndex);
   }
 
   // 更新统计信息
-  function updateStats(total) {
+  function updateStats(total, isSearching = false) {
     const statsText = document.getElementById('stats-text');
     if (statsText) {
-      statsText.innerHTML = `${t('stats')} · <span id="total-count" class="font-semibold text-gray-900 dark:text-white">${total}</span> ${t('items')}`;
+      const locale = getLocale();
+      const statsLabel = isSearching 
+        ? (locale === 'zh' ? '找到' : 'Found')
+        : (locale === 'zh' ? '已收录' : 'Collected');
+      
+      statsText.innerHTML = `${statsLabel} · <span id="total-count" class="font-semibold text-gray-900 dark:text-white">${total}</span> ${t('items')}`;
     }
   }
 
@@ -380,7 +385,8 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       e.preventDefault();
       e.stopPropagation();
       if (currentPage > 1) {
-        renderTools(filteredTools, currentPage - 1);
+        const isSearching = currentQuery !== '';
+        renderTools(filteredTools, currentPage - 1, true, isSearching);
       }
     });
     
@@ -389,7 +395,8 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       e.stopPropagation();
       const currentTotalPages = Math.ceil(filteredTools.length / ITEMS_PER_PAGE);
       if (currentPage < currentTotalPages) {
-        renderTools(filteredTools, currentPage + 1);
+        const isSearching = currentQuery !== '';
+        renderTools(filteredTools, currentPage + 1, true, isSearching);
       }
     });
     
@@ -477,7 +484,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
           .map(
             (tool, index) => `
           <div
-            class="suggestion-item px-4 py-3.5 cursor-pointer flex items-start gap-3 border-l-2 border-transparent hover:bg-blue-50/50 dark:hover:bg-blue-950/20 transition-all duration-200"
+            class="suggestion-item px-4 py-3.5 cursor-pointer flex items-start gap-3"
             data-index="${index}"
             data-name="${escapeHtml(tool.name)}"
           >
@@ -692,7 +699,8 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       const urlPage = getURLParam('page');
       const page = urlPage && urlPage > 0 ? urlPage : 1;
       currentPage = page;
-      renderTools(filteredTools, page, false); // 不更新 URL，因为浏览器已经更新了
+      const isSearching = currentQuery !== '';
+      renderTools(filteredTools, page, false, isSearching); // 不更新 URL，因为浏览器已经更新了
     });
 
     // 确保当前页码与 URL 同步
@@ -702,10 +710,14 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     // 如果 URL 中的页码与当前页码不一致，或者需要重新渲染分页
     if (currentURLPage !== currentPage) {
       currentPage = Math.min(currentURLPage, totalPages || 1);
-      renderTools(filteredTools, currentPage, false); // 不更新 URL，因为 URL 已经正确
+      const isSearching = currentQuery !== '';
+      renderTools(filteredTools, currentPage, false, isSearching); // 不更新 URL，因为 URL 已经正确
     } else {
       // 即使页码一致，也要重新创建分页按钮以确保事件绑定正确
       updatePagination(currentPage, totalPages, false);
+      // 更新统计信息显示
+      const isSearching = currentQuery !== '';
+      updateStats(filteredTools.length, isSearching);
     }
   });
 </script>
