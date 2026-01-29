@@ -206,7 +206,42 @@ const initialTools = toolsData.slice(startIndex, endIndex);
   // 渲染工具卡片
   function renderTools(tools, page, updateURL = true) {
     const container = document.getElementById('tools-container');
+    const paginationContainer = document.getElementById('pagination-container');
     if (!container) return;
+
+    // 如果工具列表为空，显示空状态并隐藏分页
+    if (tools.length === 0) {
+      const locale = getLocale();
+      const emptyMessage = locale === 'zh' ? '未找到相关工具' : 'No tools found';
+      const emptyDescription = locale === 'zh' 
+        ? '尝试调整搜索条件或浏览所有工具' 
+        : 'Try adjusting your search or browse all tools';
+      
+      container.innerHTML = `
+        <div class="col-span-full flex flex-col items-center justify-center py-16 px-4">
+          <div class="w-24 h-24 mb-6 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+            <svg class="w-12 h-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+          </div>
+          <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            ${emptyMessage}
+          </h3>
+          <p class="text-gray-500 dark:text-gray-400 text-center max-w-md">
+            ${emptyDescription}
+          </p>
+        </div>
+      `;
+      
+      // 隐藏分页
+      if (paginationContainer) {
+        paginationContainer.innerHTML = '';
+      }
+      
+      // 更新统计信息
+      updateStats(0);
+      return;
+    }
 
     // 确保页码有效
     const totalPages = Math.ceil(tools.length / ITEMS_PER_PAGE);
@@ -217,7 +252,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     const endIndex = startIndex + ITEMS_PER_PAGE;
     const pageTools = tools.slice(startIndex, endIndex);
 
-        container.innerHTML = pageTools
+    container.innerHTML = pageTools
       .map(
         (tool) => `
       <a
@@ -269,13 +304,19 @@ const initialTools = toolsData.slice(startIndex, endIndex);
   function updatePagination(page, totalPages, updateURL = true) {
     currentPage = page;
     
+    const paginationContainer = document.getElementById('pagination-container');
+    if (!paginationContainer) return;
+    
+    // 如果总页数为0或工具列表为空，隐藏分页
+    if (totalPages === 0 || filteredTools.length === 0) {
+      paginationContainer.innerHTML = '';
+      return;
+    }
+    
     // 更新 URL 参数
     if (updateURL) {
       updateURLParam('page', page);
     }
-    
-    const paginationContainer = document.getElementById('pagination-container');
-    if (!paginationContainer) return;
 
     // 创建分页容器
     const paginationDiv = document.createElement('div');
