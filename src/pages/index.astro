@@ -1,11 +1,217 @@
 ---
-import Welcome from '../components/Welcome.astro';
 import Layout from '../layouts/Layout.astro';
+import Navbar from '../components/Navbar.astro';
+import ToolCard from '../components/ToolCard.astro';
+import Pagination from '../components/Pagination.astro';
+import Footer from '../components/Footer.astro';
+import toolsData from '../../public/data/tools.json';
 
-// Welcome to Astro! Wondering what to do next? Check out the Astro documentation at https://docs.astro.build
-// Don't want to use any of this? Delete everything in this file, the `assets`, `components`, and `layouts` directories, and start fresh.
+const ITEMS_PER_PAGE = 24;
 ---
 
-<Layout>
-	<Welcome />
+<Layout title="Skills - skill0">
+  <div class="min-h-screen flex flex-col bg-white dark:bg-gray-900">
+    <Navbar />
+    
+    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 w-full">
+      <!-- 标题信息 -->
+      <div class="mb-8">
+        <h1 class="text-3xl font-bold text-gray-900 dark:text-white mb-2">Skills</h1>
+        <p class="text-gray-600 dark:text-gray-400">
+          <span id="stats-text">已收录 · <span id="total-count">{toolsData.length}</span> 项</span>
+        </p>
+      </div>
+
+      <!-- 工具卡片列表 -->
+      <div id="tools-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
+        {toolsData.slice(0, ITEMS_PER_PAGE).map((tool) => (
+          <ToolCard
+            id={tool.id}
+            name={tool.name}
+            description={tool.description}
+            url={tool.url}
+          />
+        ))}
+      </div>
+
+      <!-- 分页 -->
+      <div id="pagination-container">
+        <Pagination
+          currentPage={1}
+          totalPages={Math.ceil(toolsData.length / ITEMS_PER_PAGE)}
+        />
+      </div>
+    </main>
+
+    <Footer />
+  </div>
 </Layout>
+
+<script define:vars={{ toolsData, ITEMS_PER_PAGE }}>
+  import Fuse from 'fuse.js';
+  
+  let currentPage = 1;
+  let filteredTools = [...toolsData];
+  let fuse;
+
+  // 初始化 Fuse.js
+  function initFuse() {
+    fuse = new Fuse(toolsData, {
+      keys: ['name', 'description'],
+      threshold: 0.3,
+      includeScore: true,
+    });
+  }
+
+  // 渲染工具卡片
+  function renderTools(tools, page) {
+    const container = document.getElementById('tools-container');
+    const startIndex = (page - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    const pageTools = tools.slice(startIndex, endIndex);
+
+    if (!container) return;
+
+    container.innerHTML = pageTools
+      .map(
+        (tool) => `
+      <a
+        href="${tool.url}"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="block p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-md transition-all group"
+      >
+        <div class="flex items-start justify-between mb-2">
+          <div class="flex items-center gap-2 flex-1 min-w-0">
+            <span class="flex-shrink-0 w-2 h-2 bg-green-500 rounded-full mt-1.5"></span>
+            <h3 class="font-semibold text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+              ${escapeHtml(tool.name)}
+            </h3>
+          </div>
+          <button
+            class="flex-shrink-0 p-1 text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+            aria-label="收藏"
+            onclick="event.preventDefault(); event.stopPropagation();"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+            </svg>
+          </button>
+        </div>
+        <p class="text-sm text-gray-600 dark:text-gray-400 line-clamp-2">
+          ${escapeHtml(tool.description)}
+        </p>
+      </a>
+    `
+      )
+      .join('');
+
+    // 更新统计信息
+    updateStats(tools.length);
+    // 更新分页
+    updatePagination(page, Math.ceil(tools.length / ITEMS_PER_PAGE));
+  }
+
+  // HTML 转义函数
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // 更新统计信息
+  function updateStats(total) {
+    const totalCount = document.getElementById('total-count');
+    if (totalCount) {
+      totalCount.textContent = total.toString();
+    }
+  }
+
+  // 更新分页
+  function updatePagination(page, totalPages) {
+    currentPage = page;
+    const paginationContainer = document.getElementById('pagination-container');
+    if (paginationContainer) {
+      paginationContainer.innerHTML = `
+        <div class="flex items-center justify-between mt-8">
+          <div class="text-sm text-gray-600 dark:text-gray-400">
+            页 ${page} / ${totalPages}
+          </div>
+          <div class="flex gap-2">
+            <button
+              id="prev-page"
+              ${page === 1 ? 'disabled' : ''}
+              class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              上一页
+            </button>
+            <button
+              id="next-page"
+              ${page === totalPages ? 'disabled' : ''}
+              class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            >
+              下一页
+            </button>
+          </div>
+        </div>
+      `;
+
+      // 绑定分页按钮事件
+      const prevBtn = document.getElementById('prev-page');
+      const nextBtn = document.getElementById('next-page');
+
+      if (prevBtn) {
+        prevBtn.addEventListener('click', () => {
+          if (currentPage > 1) {
+            renderTools(filteredTools, currentPage - 1);
+          }
+        });
+      }
+
+      if (nextBtn) {
+        nextBtn.addEventListener('click', () => {
+          if (currentPage < totalPages) {
+            renderTools(filteredTools, currentPage + 1);
+          }
+        });
+      }
+    }
+  }
+
+  // 搜索功能
+  function handleSearch(query) {
+    if (!fuse) return;
+
+    if (query.trim() === '') {
+      filteredTools = [...toolsData];
+    } else {
+      const results = fuse.search(query);
+      filteredTools = results.map((result) => result.item);
+    }
+
+    currentPage = 1;
+    renderTools(filteredTools, 1);
+  }
+
+  // 初始化
+  document.addEventListener('DOMContentLoaded', () => {
+    initFuse();
+
+    const searchInput = document.getElementById('search-input');
+    if (searchInput) {
+      // 防抖搜索
+      let searchTimeout;
+      searchInput.addEventListener('input', (e) => {
+        clearTimeout(searchTimeout);
+        const query = e.target.value;
+        searchTimeout = setTimeout(() => {
+          handleSearch(query);
+        }, 300);
+      });
+    }
+
+    // 初始化分页按钮
+    const totalPages = Math.ceil(filteredTools.length / ITEMS_PER_PAGE);
+    updatePagination(1, totalPages);
+  });
+</script>
