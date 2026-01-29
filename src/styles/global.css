@@ -1,1 +1,4 @@
 @import "tailwindcss";
+
+/* Tailwind CSS 4.x: 配置 dark mode 使用 class 策略而不是媒体查询 */
+@custom-variant dark (&&:where(.dark, .dark *));

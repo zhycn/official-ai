@@ -1,5 +1,5 @@
 ---
-// 三模式主题切换组件：点击在亮色、暗色、自动之间循环切换
+// 双模式主题切换组件：点击在亮色和暗色之间切换
 ---
 
 <button
@@ -16,151 +16,155 @@
   <svg id="theme-icon-dark" class="h-5 w-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
   </svg>
-  <!-- 自动模式图标 -->
-  <svg id="theme-icon-auto" class="h-5 w-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-  </svg>
 </button>
 
-<script>
+<script is:inline>
   (function() {
     'use strict';
     
-    const themes = ['light', 'dark', 'auto'];
-    let mediaQueryListener = null;
+    // 只支持 light 和 dark 两种模式
+    const themes = ['light', 'dark'];
     
     // 获取当前主题
     function getTheme() {
-      if (typeof window === 'undefined') return 'auto';
-      return localStorage.getItem('theme') || 'auto';
+      try {
+        const theme = localStorage.getItem('theme');
+        // 如果之前是 auto，转换为 light
+        if (theme === 'auto' || !theme) {
+          return 'light';
+        }
+        return theme === 'dark' ? 'dark' : 'light';
+      } catch (e) {
+        return 'light';
+      }
     }
     
     // 设置主题
     function setTheme(theme) {
-      if (typeof window === 'undefined') return;
-      localStorage.setItem('theme', theme);
+      try {
+        localStorage.setItem('theme', theme);
+      } catch (e) {
+        console.warn('Failed to save theme:', e);
+      }
     }
     
-    // 应用主题到 DOM
+    // 应用主题到 DOM（无闪动版本）
     function applyTheme(theme) {
       const html = document.documentElement;
       
-      // 移除所有可能的主题类
-      html.classList.remove('dark');
+      // 暂时禁用过渡动画
+      const disableStyle = document.createElement('style');
+      disableStyle.id = 'theme-transition-disable';
+      disableStyle.textContent = '* { transition: none !important; }';
+      document.head.appendChild(disableStyle);
       
+      // 同步更新主题类
       if (theme === 'dark') {
         html.classList.add('dark');
-      } else if (theme === 'auto') {
-        // 自动模式：根据系统偏好
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-        if (prefersDark) {
-          html.classList.add('dark');
-        }
+        html.style.colorScheme = 'dark';
+      } else {
+        html.classList.remove('dark');
+        html.style.colorScheme = 'light';
       }
-      // light 模式：不添加 dark 类
       
-      updateIcon(theme);
+      // 强制同步渲染
+      html.offsetHeight;
+      
+      // 恢复过渡动画（延迟一帧）
+      requestAnimationFrame(function() {
+        requestAnimationFrame(function() {
+          const style = document.getElementById('theme-transition-disable');
+          if (style) {
+            style.remove();
+          }
+        });
+      });
     }
     
     // 更新图标显示
     function updateIcon(theme) {
       const lightIcon = document.getElementById('theme-icon-light');
       const darkIcon = document.getElementById('theme-icon-dark');
-      const autoIcon = document.getElementById('theme-icon-auto');
       
       // 隐藏所有图标
-      [lightIcon, darkIcon, autoIcon].forEach(icon => {
-        if (icon) icon.classList.add('hidden');
-      });
+      if (lightIcon) lightIcon.classList.add('hidden');
+      if (darkIcon) darkIcon.classList.add('hidden');
       
       // 显示对应图标
       if (theme === 'light' && lightIcon) {
         lightIcon.classList.remove('hidden');
       } else if (theme === 'dark' && darkIcon) {
         darkIcon.classList.remove('hidden');
-      } else if (theme === 'auto' && autoIcon) {
-        autoIcon.classList.remove('hidden');
-      }
-    }
-    
-    // 设置系统主题监听器
-    function setupSystemThemeListener() {
-      // 移除旧的监听器
-      if (mediaQueryListener) {
-        const mq = window.matchMedia('(prefers-color-scheme: dark)');
-        if (mq.removeEventListener) {
-          mq.removeEventListener('change', mediaQueryListener);
-        } else if (mq.removeListener) {
-          mq.removeListener(mediaQueryListener);
-        }
-      }
-      
-      // 创建新的监听器
-      const mq = window.matchMedia('(prefers-color-scheme: dark)');
-      mediaQueryListener = function(e) {
-        if (getTheme() === 'auto') {
-          const html = document.documentElement;
-          if (e.matches) {
-            html.classList.add('dark');
-          } else {
-            html.classList.remove('dark');
-          }
-        }
-      };
-      
-      // 添加监听器
-      if (mq.addEventListener) {
-        mq.addEventListener('change', mediaQueryListener);
-      } else if (mq.addListener) {
-        mq.addListener(mediaQueryListener);
       }
     }
     
     // 切换主题
     function toggleTheme() {
       const current = getTheme();
-      const currentIndex = themes.indexOf(current);
-      const nextIndex = (currentIndex + 1) % themes.length;
-      const nextTheme = themes[nextIndex];
+      const nextTheme = current === 'light' ? 'dark' : 'light';
       
       setTheme(nextTheme);
       applyTheme(nextTheme);
+      updateIcon(nextTheme);
       
-      // 如果切换到自动模式，设置监听器
-      if (nextTheme === 'auto') {
-        setupSystemThemeListener();
+      // 触发事件
+      try {
+        window.dispatchEvent(new CustomEvent('themechange', { 
+          detail: { theme: nextTheme } 
+        }));
+      } catch (e) {
+        console.warn('Failed to dispatch themechange event:', e);
       }
     }
     
-    // 初始化
-    function init() {
+    // 初始化主题切换按钮
+    function initToggle() {
+      const button = document.getElementById('theme-toggle');
+      if (!button) {
+        setTimeout(initToggle, 100);
+        return;
+      }
+      
+      // 使用 onclick 绑定事件
+      button.onclick = function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        toggleTheme();
+        return false;
+      };
+      
+      // 初始化图标显示
+      const theme = getTheme();
+      updateIcon(theme);
+    }
+    
+    // 初始化主题
+    function initTheme() {
       const theme = getTheme();
       applyTheme(theme);
-      
-      if (theme === 'auto') {
-        setupSystemThemeListener();
-      }
-      
-      const button = document.getElementById('theme-toggle');
-      if (button) {
-        // 移除所有可能的事件监听器
-        const newButton = button.cloneNode(true);
-        button.parentNode.replaceChild(newButton, button);
-        
-        // 绑定新的事件
-        newButton.addEventListener('click', function(e) {
-          e.preventDefault();
-          e.stopPropagation();
-          toggleTheme();
-        });
-      }
+      updateIcon(theme);
+    }
+    
+    // 导出到全局
+    if (typeof window !== 'undefined') {
+      window.__themeManager = {
+        getTheme: getTheme,
+        setTheme: setTheme,
+        applyTheme: applyTheme,
+        toggleTheme: toggleTheme
+      };
     }
     
     // 执行初始化
+    initTheme();
+    
+    // 初始化按钮
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', init);
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(initToggle, 100);
+      });
     } else {
-      init();
+      setTimeout(initToggle, 100);
     }
   })();
 </script>

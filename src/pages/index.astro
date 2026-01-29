@@ -290,6 +290,36 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     updateStats(tools.length);
     // 更新分页
     updatePagination(page, totalPages, updateURL);
+    
+    // 滚动到顶部，模拟页面刷新效果
+    scrollToTop();
+  }
+  
+  // 滚动到顶部（模拟页面刷新效果）
+  function scrollToTop() {
+    // 立即滚动到顶部（不等待动画）
+    window.scrollTo(0, 0);
+    
+    // 添加轻微的视觉反馈，模拟页面刷新
+    const main = document.querySelector('main');
+    if (main) {
+      // 快速淡出再淡入
+      main.style.transition = 'opacity 0.15s ease-out';
+      main.style.opacity = '0.7';
+      
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          main.style.transition = 'opacity 0.2s ease-in';
+          main.style.opacity = '1';
+          
+          // 清理样式
+          setTimeout(() => {
+            main.style.transition = '';
+            main.style.opacity = '';
+          }, 200);
+        });
+      });
+    }
   }
 
   // 更新统计信息
