@@ -7,6 +7,15 @@ import Footer from '../components/Footer.astro';
 import toolsData from '../../public/data/tools.json';
 
 const ITEMS_PER_PAGE = 24;
+
+// 从 URL 读取页码（服务端）
+const urlPageParam = Astro.url.searchParams.get('page');
+const initialPage = urlPageParam ? Math.max(1, parseInt(urlPageParam, 10)) : 1;
+const totalPages = Math.ceil(toolsData.length / ITEMS_PER_PAGE);
+const safePage = Math.min(initialPage, totalPages || 1);
+const startIndex = (safePage - 1) * ITEMS_PER_PAGE;
+const endIndex = startIndex + ITEMS_PER_PAGE;
+const initialTools = toolsData.slice(startIndex, endIndex);
 ---
 
 <Layout title="Skills - skill0">
@@ -24,7 +33,7 @@ const ITEMS_PER_PAGE = 24;
 
       <!-- 工具卡片列表 -->
       <div id="tools-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-8">
-        {toolsData.slice(0, ITEMS_PER_PAGE).map((tool) => (
+        {initialTools.map((tool) => (
           <ToolCard
             id={tool.id}
             name={tool.name}
@@ -37,8 +46,8 @@ const ITEMS_PER_PAGE = 24;
       <!-- 分页 -->
       <div id="pagination-container">
         <Pagination
-          currentPage={1}
-          totalPages={Math.ceil(toolsData.length / ITEMS_PER_PAGE)}
+          currentPage={safePage}
+          totalPages={totalPages}
         />
       </div>
     </main>
@@ -48,35 +57,138 @@ const ITEMS_PER_PAGE = 24;
 </Layout>
 
 <script define:vars={{ toolsData, ITEMS_PER_PAGE }}>
-  import Fuse from 'fuse.js';
-  
+  // 使用动态导入加载 Fuse.js
+  let Fuse;
   let currentPage = 1;
   let filteredTools = [...toolsData];
   let fuse;
 
-  // 初始化 Fuse.js
-  function initFuse() {
-    fuse = new Fuse(toolsData, {
-      keys: ['name', 'description'],
-      threshold: 0.3,
-      includeScore: true,
+  // 获取 URL 参数
+  function getURLParam(name) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const value = urlParams.get(name);
+    return value ? parseInt(value, 10) : null;
+  }
+
+  // 更新 URL 参数（不刷新页面）
+  function updateURLParam(name, value) {
+    const url = new URL(window.location);
+    if (value === null || value === undefined || value === 1) {
+      // 如果是第一页或无效值，移除参数
+      url.searchParams.delete(name);
+    } else {
+      url.searchParams.set(name, value.toString());
+    }
+    window.history.pushState({ page: value }, '', url);
+  }
+
+  // HTML 转义函数
+  function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+
+  // 加载 Fuse.js（使用 CDN）
+  function loadFuseJS() {
+    return new Promise((resolve, reject) => {
+      // 检查是否已经加载
+      if (window.Fuse) {
+        resolve(window.Fuse);
+        return;
+      }
+
+      // 检查是否正在加载
+      if (window.__fuseLoading) {
+        window.__fuseLoading.then(() => {
+          if (window.Fuse) {
+            resolve(window.Fuse);
+          } else {
+            reject(new Error('Fuse.js not available'));
+          }
+        }).catch(reject);
+        return;
+      }
+
+      // 创建加载 Promise
+      window.__fuseLoading = new Promise((loadResolve, loadReject) => {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/fuse.js@7.1.0/dist/fuse.min.js';
+        script.async = true;
+        script.crossOrigin = 'anonymous';
+        
+        const timeout = setTimeout(() => {
+          loadReject(new Error('Fuse.js loading timeout'));
+        }, 10000); // 10秒超时
+        
+        script.onload = () => {
+          clearTimeout(timeout);
+          // 等待一下确保 Fuse 已经挂载到 window
+          setTimeout(() => {
+            if (window.Fuse) {
+              loadResolve(window.Fuse);
+            } else {
+              loadReject(new Error('Fuse.js loaded but not available on window'));
+            }
+          }, 100);
+        };
+        
+        script.onerror = () => {
+          clearTimeout(timeout);
+          loadReject(new Error('Failed to load Fuse.js from CDN'));
+        };
+        
+        document.head.appendChild(script);
+      });
+
+      window.__fuseLoading
+        .then(() => {
+          if (window.Fuse) {
+            resolve(window.Fuse);
+          } else {
+            reject(new Error('Fuse.js not available'));
+          }
+        })
+        .catch(reject);
     });
   }
 
+  // 初始化 Fuse.js
+  async function initFuse() {
+    try {
+      Fuse = await loadFuseJS();
+      fuse = new Fuse(toolsData, {
+        keys: ['name', 'description'],
+        threshold: 0.3,
+        includeScore: true,
+      });
+      console.log('Fuse.js initialized successfully');
+      return true;
+    } catch (error) {
+      console.error('Failed to load Fuse.js:', error);
+      return false;
+    }
+  }
+
   // 渲染工具卡片
-  function renderTools(tools, page) {
+  function renderTools(tools, page, updateURL = true) {
     const container = document.getElementById('tools-container');
+    if (!container) return;
+
+    // 确保页码有效
+    const totalPages = Math.ceil(tools.length / ITEMS_PER_PAGE);
+    if (page < 1) page = 1;
+    if (page > totalPages && totalPages > 0) page = totalPages;
+
     const startIndex = (page - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
     const pageTools = tools.slice(startIndex, endIndex);
-
-    if (!container) return;
 
     container.innerHTML = pageTools
       .map(
         (tool) => `
       <a
-        href="${tool.url}"
+        href="${escapeHtml(tool.url)}"
         target="_blank"
         rel="noopener noreferrer"
         class="block p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 hover:shadow-md transition-all group"
@@ -109,14 +221,7 @@ const ITEMS_PER_PAGE = 24;
     // 更新统计信息
     updateStats(tools.length);
     // 更新分页
-    updatePagination(page, Math.ceil(tools.length / ITEMS_PER_PAGE));
-  }
-
-  // HTML 转义函数
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
+    updatePagination(page, totalPages, updateURL);
   }
 
   // 更新统计信息
@@ -128,90 +233,373 @@ const ITEMS_PER_PAGE = 24;
   }
 
   // 更新分页
-  function updatePagination(page, totalPages) {
+  function updatePagination(page, totalPages, updateURL = true) {
     currentPage = page;
-    const paginationContainer = document.getElementById('pagination-container');
-    if (paginationContainer) {
-      paginationContainer.innerHTML = `
-        <div class="flex items-center justify-between mt-8">
-          <div class="text-sm text-gray-600 dark:text-gray-400">
-            页 ${page} / ${totalPages}
-          </div>
-          <div class="flex gap-2">
-            <button
-              id="prev-page"
-              ${page === 1 ? 'disabled' : ''}
-              class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              上一页
-            </button>
-            <button
-              id="next-page"
-              ${page === totalPages ? 'disabled' : ''}
-              class="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-            >
-              下一页
-            </button>
-          </div>
-        </div>
-      `;
-
-      // 绑定分页按钮事件
-      const prevBtn = document.getElementById('prev-page');
-      const nextBtn = document.getElementById('next-page');
-
-      if (prevBtn) {
-        prevBtn.addEventListener('click', () => {
-          if (currentPage > 1) {
-            renderTools(filteredTools, currentPage - 1);
-          }
-        });
-      }
-
-      if (nextBtn) {
-        nextBtn.addEventListener('click', () => {
-          if (currentPage < totalPages) {
-            renderTools(filteredTools, currentPage + 1);
-          }
-        });
-      }
+    
+    // 更新 URL 参数
+    if (updateURL) {
+      updateURLParam('page', page);
     }
+    
+    const paginationContainer = document.getElementById('pagination-container');
+    if (!paginationContainer) return;
+
+    // 创建分页容器
+    const paginationDiv = document.createElement('div');
+    paginationDiv.className = 'flex items-center justify-between mt-8';
+    
+    const pageInfo = document.createElement('div');
+    pageInfo.className = 'text-sm text-gray-600 dark:text-gray-400';
+    pageInfo.textContent = `页 ${page} / ${totalPages}`;
+    
+    const buttonContainer = document.createElement('div');
+    buttonContainer.className = 'flex gap-2';
+    
+    // 创建上一页按钮
+    const prevBtn = document.createElement('button');
+    prevBtn.id = 'prev-page';
+    prevBtn.className = 'px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors';
+    prevBtn.textContent = '上一页';
+    prevBtn.disabled = page === 1;
+    
+    // 创建下一页按钮
+    const nextBtn = document.createElement('button');
+    nextBtn.id = 'next-page';
+    nextBtn.className = 'px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors';
+    nextBtn.textContent = '下一页';
+    nextBtn.disabled = page === totalPages;
+    
+    // 绑定事件
+    prevBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (currentPage > 1) {
+        renderTools(filteredTools, currentPage - 1);
+      }
+    });
+    
+    nextBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      const currentTotalPages = Math.ceil(filteredTools.length / ITEMS_PER_PAGE);
+      if (currentPage < currentTotalPages) {
+        renderTools(filteredTools, currentPage + 1);
+      }
+    });
+    
+    buttonContainer.appendChild(prevBtn);
+    buttonContainer.appendChild(nextBtn);
+    paginationDiv.appendChild(pageInfo);
+    paginationDiv.appendChild(buttonContainer);
+    
+    // 清空并更新容器
+    paginationContainer.innerHTML = '';
+    paginationContainer.appendChild(paginationDiv);
   }
 
-  // 搜索功能
-  function handleSearch(query) {
-    if (!fuse) return;
+  // 搜索相关变量
+  let selectedIndex = -1;
+  let suggestions = [];
+  let currentQuery = '';
 
-    if (query.trim() === '') {
+  // 高亮匹配文本
+  function highlightText(text, query) {
+    if (!query || !text) return escapeHtml(text);
+    
+    const escapedText = escapeHtml(text);
+    const escapedQuery = escapeHtml(query);
+    const regex = new RegExp(`(${escapedQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+    return escapedText.replace(regex, '<span class="highlight">$1</span>');
+  }
+
+  // 执行搜索（应用到结果列表）
+  function performSearch(query) {
+    if (!fuse) {
+      console.warn('Fuse.js not initialized yet');
+      return;
+    }
+
+    currentQuery = query.trim();
+
+    if (currentQuery === '') {
       filteredTools = [...toolsData];
     } else {
-      const results = fuse.search(query);
-      filteredTools = results.map((result) => result.item);
+      try {
+        const results = fuse.search(currentQuery);
+        filteredTools = results.map((result) => result.item);
+      } catch (error) {
+        console.error('Search error:', error);
+        filteredTools = [...toolsData];
+      }
     }
 
+    // 搜索时重置到第一页并更新 URL
     currentPage = 1;
-    renderTools(filteredTools, 1);
+    updateURLParam('page', null);
+    renderTools(filteredTools, 1, false);
   }
 
-  // 初始化
-  document.addEventListener('DOMContentLoaded', () => {
-    initFuse();
+  // 显示搜索建议
+  function showSuggestions(query) {
+    if (!fuse) return;
 
+    const suggestionsContainer = document.getElementById('search-suggestions');
+    const suggestionsList = document.getElementById('suggestions-list');
+    
+    if (!suggestionsContainer || !suggestionsList) return;
+
+    if (!query || query.trim() === '') {
+      suggestionsContainer.classList.add('hidden');
+      suggestions = [];
+      selectedIndex = -1;
+      return;
+    }
+
+    try {
+      const results = fuse.search(query, { limit: 8 });
+      suggestions = results.map((result) => result.item);
+
+      if (suggestions.length === 0) {
+        suggestionsList.innerHTML = `
+          <div class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+            未找到匹配的工具
+          </div>
+        `;
+        suggestionsContainer.classList.remove('hidden');
+      } else {
+        suggestionsList.innerHTML = suggestions
+          .map(
+            (tool, index) => `
+          <div
+            class="suggestion-item px-4 py-3 cursor-pointer flex items-start gap-3"
+            data-index="${index}"
+            data-name="${escapeHtml(tool.name)}"
+          >
+            <svg class="w-5 h-5 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+            </svg>
+            <div class="flex-1 min-w-0">
+              <div class="font-medium text-gray-900 dark:text-white">
+                ${highlightText(tool.name, query)}
+              </div>
+              <div class="text-sm text-gray-500 dark:text-gray-400 line-clamp-1 mt-0.5">
+                ${highlightText(tool.description, query)}
+              </div>
+            </div>
+          </div>
+        `
+          )
+          .join('');
+
+        // 绑定点击事件
+        suggestionsList.querySelectorAll('.suggestion-item').forEach((item, index) => {
+          item.addEventListener('click', () => {
+            selectSuggestion(index);
+          });
+        });
+
+        suggestionsContainer.classList.remove('hidden');
+        selectedIndex = -1;
+      }
+    } catch (error) {
+      console.error('Suggestions error:', error);
+      suggestionsContainer.classList.add('hidden');
+    }
+  }
+
+  // 选择建议
+  function selectSuggestion(index) {
+    if (index < 0 || index >= suggestions.length) return;
+
+    const tool = suggestions[index];
     const searchInput = document.getElementById('search-input');
+    
     if (searchInput) {
-      // 防抖搜索
-      let searchTimeout;
-      searchInput.addEventListener('input', (e) => {
-        clearTimeout(searchTimeout);
-        const query = e.target.value;
-        searchTimeout = setTimeout(() => {
-          handleSearch(query);
-        }, 300);
+      searchInput.value = tool.name;
+      performSearch(tool.name);
+      hideSuggestions();
+      searchInput.blur();
+    }
+  }
+
+  // 隐藏建议
+  function hideSuggestions() {
+    const suggestionsContainer = document.getElementById('search-suggestions');
+    if (suggestionsContainer) {
+      suggestionsContainer.classList.add('hidden');
+    }
+    selectedIndex = -1;
+  }
+
+  // 更新选中项样式
+  function updateSelectedSuggestion() {
+    const items = document.querySelectorAll('.suggestion-item');
+    items.forEach((item, index) => {
+      if (index === selectedIndex) {
+        item.classList.add('active');
+        item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+      } else {
+        item.classList.remove('active');
+      }
+    });
+  }
+
+  // 绑定搜索功能
+  function bindSearchEvents() {
+    const searchInput = document.getElementById('search-input');
+    const searchClear = document.getElementById('search-clear');
+    const searchContainer = document.getElementById('search-container');
+
+    if (!searchInput) {
+      setTimeout(bindSearchEvents, 100);
+      return;
+    }
+
+    // 输入事件 - 显示建议
+    let inputTimeout;
+    searchInput.addEventListener('input', (e) => {
+      const query = e.target.value;
+      
+      // 显示/隐藏清除按钮
+      if (searchClear) {
+        if (query.trim()) {
+          searchClear.classList.remove('hidden');
+        } else {
+          searchClear.classList.add('hidden');
+        }
+      }
+
+      clearTimeout(inputTimeout);
+      inputTimeout = setTimeout(() => {
+        showSuggestions(query);
+      }, 150);
+    });
+
+    // 键盘事件
+    searchInput.addEventListener('keydown', (e) => {
+      const suggestionsContainer = document.getElementById('search-suggestions');
+      const isVisible = suggestionsContainer && !suggestionsContainer.classList.contains('hidden');
+
+      switch (e.key) {
+        case 'ArrowDown':
+          e.preventDefault();
+          if (isVisible && suggestions.length > 0) {
+            selectedIndex = Math.min(selectedIndex + 1, suggestions.length - 1);
+            updateSelectedSuggestion();
+          }
+          break;
+        case 'ArrowUp':
+          e.preventDefault();
+          if (isVisible && suggestions.length > 0) {
+            selectedIndex = Math.max(selectedIndex - 1, -1);
+            updateSelectedSuggestion();
+          }
+          break;
+        case 'Enter':
+          e.preventDefault();
+          if (isVisible && selectedIndex >= 0 && selectedIndex < suggestions.length) {
+            selectSuggestion(selectedIndex);
+          } else {
+            performSearch(searchInput.value);
+            hideSuggestions();
+          }
+          break;
+        case 'Escape':
+          hideSuggestions();
+          searchInput.blur();
+          break;
+      }
+    });
+
+    // 聚焦事件
+    searchInput.addEventListener('focus', () => {
+      if (searchInput.value.trim()) {
+        showSuggestions(searchInput.value);
+      }
+    });
+
+    // 清除按钮
+    if (searchClear) {
+      searchClear.addEventListener('click', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        searchInput.value = '';
+        searchInput.focus();
+        searchClear.classList.add('hidden');
+        performSearch('');
+        hideSuggestions();
       });
     }
 
-    // 初始化分页按钮
+    // 点击外部关闭建议
+    document.addEventListener('click', (e) => {
+      if (searchContainer && !searchContainer.contains(e.target)) {
+        hideSuggestions();
+      }
+    });
+
+    // 键盘快捷键 ⌘K / Ctrl+K
+    document.addEventListener('keydown', (e) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        searchInput.focus();
+        if (searchInput.value.trim()) {
+          showSuggestions(searchInput.value);
+        }
+      }
+    });
+  }
+
+  // 初始化
+  document.addEventListener('DOMContentLoaded', async () => {
+    console.log('DOMContentLoaded - Initializing...');
+    
+    // 初始化 Fuse.js
+    const fuseInitialized = await initFuse();
+    if (!fuseInitialized) {
+      console.error('Failed to initialize Fuse.js');
+    }
+
+    // 从 URL 读取页码（与服务端保持一致）
+    const urlPage = getURLParam('page');
+    if (urlPage && urlPage > 0) {
+      currentPage = urlPage;
+    } else {
+      // 如果没有 URL 参数，从服务端渲染的页码读取
+      const paginationContainer = document.getElementById('pagination-container');
+      if (paginationContainer) {
+        const pageInfo = paginationContainer.querySelector('.text-sm');
+        if (pageInfo) {
+          const match = pageInfo.textContent.match(/页 (\d+) \/ \d+/);
+          if (match) {
+            currentPage = parseInt(match[1], 10);
+          }
+        }
+      }
+    }
+
+    // 绑定搜索功能
+    bindSearchEvents();
+
+    // 监听浏览器前进/后退事件
+    window.addEventListener('popstate', (e) => {
+      const urlPage = getURLParam('page');
+      const page = urlPage && urlPage > 0 ? urlPage : 1;
+      currentPage = page;
+      renderTools(filteredTools, page, false); // 不更新 URL，因为浏览器已经更新了
+    });
+
+    // 确保当前页码与 URL 同步
     const totalPages = Math.ceil(filteredTools.length / ITEMS_PER_PAGE);
-    updatePagination(1, totalPages);
+    const currentURLPage = getURLParam('page') || 1;
+    
+    // 如果 URL 中的页码与当前页码不一致，或者需要重新渲染分页
+    if (currentURLPage !== currentPage) {
+      currentPage = Math.min(currentURLPage, totalPages || 1);
+      renderTools(filteredTools, currentPage, false); // 不更新 URL，因为 URL 已经正确
+    } else {
+      // 即使页码一致，也要重新创建分页按钮以确保事件绑定正确
+      updatePagination(currentPage, totalPages, false);
+    }
   });
 </script>
