@@ -5,10 +5,10 @@ import ToolCard from '../components/ToolCard.astro';
 import Pagination from '../components/Pagination.astro';
 import Footer from '../components/Footer.astro';
 import toolsData from '../../public/data/tools.json';
-import { getLocale, t } from '../i18n/locales';
+import { getLocaleFromRequest, t } from '../i18n/locales';
 
 const ITEMS_PER_PAGE = 24;
-const locale = getLocale();
+const locale = getLocaleFromRequest(Astro.request);
 
 // 从 URL 读取页码（服务端）
 const urlPageParam = Astro.url.searchParams.get('page');

@@ -1,8 +1,8 @@
 ---
 // 空状态组件
-import { getLocale, t } from '../i18n/locales';
+import { getLocaleFromRequest, t } from '../i18n/locales';
 
-const locale = getLocale();
+const locale = getLocaleFromRequest(Astro.request);
 ---
 
 <div class="flex flex-col items-center justify-center py-12 sm:py-16 px-4">

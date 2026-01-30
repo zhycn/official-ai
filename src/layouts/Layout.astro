@@ -1,10 +1,10 @@
 ---
 // src/layouts/Layout.astro
 import "../styles/global.css";
-import { getLocale } from '../i18n/locales';
+import { getLocaleFromRequest } from '../i18n/locales';
 
 const { title = "DevLink Hub" } = Astro.props;
-const locale = getLocale();
+const locale = getLocaleFromRequest(Astro.request);
 const htmlLang = locale === 'zh' ? 'zh-CN' : 'en';
 ---
 

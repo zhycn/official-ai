@@ -1,9 +1,9 @@
 ---
 // Google风格的搜索框组件
-import { getLocale } from '../i18n/locales';
+import { getLocaleFromRequest, t } from '../i18n/locales';
 
-const locale = getLocale();
-const placeholder = locale === 'zh' ? '搜索工具...' : 'Search tools...';
+const locale = getLocaleFromRequest(Astro.request);
+const placeholder = t('search.placeholder', locale);
 ---
 
 <div class="relative w-full" id="search-container">

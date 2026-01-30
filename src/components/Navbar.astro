@@ -3,9 +3,9 @@
 import SearchBox from './SearchBox.astro';
 import ThemeToggle from './ThemeToggle.astro';
 import LanguageToggle from './LanguageToggle.astro';
-import { getLocale, t } from '../i18n/locales';
+import { getLocaleFromRequest, t } from '../i18n/locales';
 
-const locale = getLocale();
+const locale = getLocaleFromRequest(Astro.request);
 ---
 
 <nav class="sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">

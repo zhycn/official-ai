@@ -1,5 +1,5 @@
 ---
-import { getLocale, t } from '../i18n/locales';
+import { getLocaleFromRequest, t } from '../i18n/locales';
 
 interface Props {
   currentPage: number;
@@ -7,7 +7,7 @@ interface Props {
 }
 
 const { currentPage, totalPages } = Astro.props;
-const locale = getLocale();
+const locale = getLocaleFromRequest(Astro.request);
 ---
 
 <div class="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0 mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-gray-200/60 dark:border-gray-800/60">
