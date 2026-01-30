@@ -23,6 +23,7 @@ export interface Translations {
   // 页面内容
   page: {
     title: string;
+    subtitle: string;
     stats: string;
     statsSearch: string;
     items: string;
@@ -77,12 +78,13 @@ export const translations: Record<Locale, Translations> = {
     },
     page: {
       title: 'AI Tools',
+      subtitle: 'Go official. Skip the noise.',
       stats: '已收录',
-      statsSearch: '搜索结果',
+      statsSearch: '找到',
       items: '项',
     },
     pagination: { page: '页', prev: '上一页', next: '下一页' },
-    toolCard: { favorite: '收藏' },
+    toolCard: { favorite: '收藏', openLink: '打开链接' },
     notFound: {
       title: '页面未找到',
       description: '抱歉，您访问的页面不存在或已被移除。',
@@ -117,12 +119,13 @@ export const translations: Record<Locale, Translations> = {
     },
     page: {
       title: 'AI Tools',
+      subtitle: 'Go official. Skip the noise.',
       stats: 'Collected',
-      statsSearch: 'Search for',
+      statsSearch: 'Found',
       items: 'items',
     },
     pagination: { page: 'Page', prev: 'Previous', next: 'Next' },
-    toolCard: { favorite: 'Favorite' },
+    toolCard: { favorite: 'Favorite', openLink: 'Open link' },
     notFound: {
       title: 'Page Not Found',
       description: 'Sorry, the page you are looking for does not exist or has been removed.',
