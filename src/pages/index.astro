@@ -38,7 +38,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
         </p>
         <p class="text-base sm:text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
           <span id="stats-text" class="inline-flex items-center gap-2">
-            <span class="px-2.5 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+            <span class="px-2.5 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300">
               {t('page.stats', locale)}
             </span>
             <span id="total-count" class="font-semibold text-gray-900 dark:text-white">{toolsData.length}</span>
@@ -336,7 +336,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
         : t('page.stats');
       
       statsText.innerHTML = `<span class="inline-flex items-center gap-2">
-        <span class="px-2.5 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">${statsLabel}</span>
+        <span class="px-2.5 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300">${statsLabel}</span>
         <span id="total-count" class="font-semibold text-gray-900 dark:text-white">${total}</span>
         <span>${t('page.items')}</span>
       </span>`;
@@ -466,7 +466,8 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     // 搜索时重置到第一页并更新 URL
     currentPage = 1;
     updateURLParam('page', null);
-    renderTools(filteredTools, 1, false);
+    const isSearching = currentQuery !== '';
+    renderTools(filteredTools, 1, false, isSearching);
   }
 
   // 显示搜索建议
