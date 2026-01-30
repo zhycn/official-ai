@@ -122,7 +122,7 @@ export const translations: Record<Locale, Translations> = {
 export const clientTranslations = translations;
 
 // ========================
-// 增强版：从请求中安全获取语言偏好（服务端使用）
+// 从请求中安全获取语言偏好（服务端使用）
 // ========================
 export function getLocaleFromRequest(request: Request): Locale {
   // 1. 优先从 Cookie 获取（需解码并验证）
