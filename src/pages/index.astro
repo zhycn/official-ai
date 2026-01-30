@@ -381,22 +381,33 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     buttonContainer.className = 'flex gap-3';
     
     const pageInfo = document.createElement('div');
+    pageInfo.id = 'pagination-page-info';
     pageInfo.className = 'text-sm sm:text-base font-medium text-gray-600 dark:text-gray-400';
     pageInfo.innerHTML = `${t('page')} <span class="font-semibold text-gray-900 dark:text-white">${page}</span> / <span class="font-semibold text-gray-900 dark:text-white">${totalPages}</span>`;
     
     // 创建上一页按钮
     const prevBtn = document.createElement('button');
     prevBtn.id = 'prev-page';
-    prevBtn.className = 'px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-300/60 dark:border-gray-700/60 rounded-xl hover:bg-gray-50/80 dark:hover:bg-gray-700/80 hover:border-gray-400 dark:hover:border-gray-600 hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white/80 disabled:hover:border-gray-300/60 dark:disabled:hover:bg-gray-800/80 dark:disabled:hover:border-gray-700/60 transition-all duration-300 hover:scale-105 active:scale-95 touch-manipulation';
-    prevBtn.textContent = '上一页';
+    prevBtn.className = 'inline-flex items-center justify-center px-4 py-2 sm:px-5 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:shadow-none dark:disabled:hover:bg-gray-800 touch-manipulation';
     prevBtn.disabled = page === 1;
+    
+    const prevText = document.createElement('span');
+    prevText.id = 'prev-page-text';
+    prevText.textContent = t('prev');
+    
+    prevBtn.appendChild(prevText);
     
     // 创建下一页按钮
     const nextBtn = document.createElement('button');
     nextBtn.id = 'next-page';
-    nextBtn.className = 'px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-300/60 dark:border-gray-700/60 rounded-xl hover:bg-gray-50/80 dark:hover:bg-gray-700/80 hover:border-gray-400 dark:hover:border-gray-600 hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white/80 disabled:hover:border-gray-300/60 dark:disabled:hover:bg-gray-800/80 dark:disabled:hover:border-gray-700/60 transition-all duration-300 hover:scale-105 active:scale-95 touch-manipulation';
-    nextBtn.textContent = '下一页';
+    nextBtn.className = 'inline-flex items-center justify-center px-4 py-2 sm:px-5 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-all duration-200 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:shadow-none dark:disabled:hover:bg-gray-800 touch-manipulation';
     nextBtn.disabled = page === totalPages;
+    
+    const nextText = document.createElement('span');
+    nextText.id = 'next-page-text';
+    nextText.textContent = t('next');
+    
+    nextBtn.appendChild(nextText);
     
     // 绑定事件
     prevBtn.addEventListener('click', (e) => {
