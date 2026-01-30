@@ -1,22 +1,19 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { getLocale, t } from '../i18n/locales';
+import { getLocaleFromRequest, t, clientTranslations } from '../i18n/locales';
 
-const locale = getLocale();
+const locale = getLocaleFromRequest(Astro.request);
 ---
 
 <Layout title={`404 - ${t('notFound.title', locale)}`}>
   <div class="min-h-screen flex flex-col bg-white dark:bg-gray-900">
     <div class="flex-1 flex items-center justify-center px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
       <div class="max-w-lg w-full text-center">
-        <!-- 404 数字 - ProductHunt 风格 -->
         <div class="mb-6 sm:mb-8">
           <h1 class="text-7xl sm:text-8xl lg:text-9xl font-bold text-gray-300 dark:text-gray-800 select-none leading-none tracking-tighter">
             404
           </h1>
         </div>
-        
-        <!-- 错误信息 - 简洁现代 -->
         <div class="mb-8 sm:mb-10">
           <h2 
             id="not-found-title"
@@ -32,7 +29,6 @@ const locale = getLocale();
           </p>
         </div>
         
-        <!-- 操作按钮 - ProductHunt 风格（橙色主题） -->
         <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center items-center">
           <a
             href="/"
@@ -59,23 +55,7 @@ const locale = getLocale();
   </div>
 </Layout>
 
-<script>
-  // 国际化翻译
-  const translations = {
-    zh: {
-      title: '页面未找到',
-      description: '抱歉，您访问的页面不存在或已被移除。',
-      backHome: '返回首页',
-      goBack: '返回上一页',
-    },
-    en: {
-      title: 'Page Not Found',
-      description: 'Sorry, the page you are looking for does not exist or has been removed.',
-      backHome: 'Back to Home',
-      goBack: 'Go Back',
-    },
-  };
-  
+<script define:vars={{ clientTranslations }}>
   // 获取当前语言
   function getLocale() {
     return localStorage.getItem('locale') || 'zh';
@@ -83,22 +63,27 @@ const locale = getLocale();
   
   // 更新页面文本
   function updatePageText(locale) {
-    const t = translations[locale] || translations.zh;
+    // @ts-ignore - locale is a valid key
+    const notFound = clientTranslations[locale]?.notFound || clientTranslations['zh'].notFound;
     
     const titleEl = document.getElementById('not-found-title');
     const descEl = document.getElementById('not-found-description');
     const backHomeEl = document.getElementById('back-home-text');
     const goBackEl = document.getElementById('go-back-text');
     
-    if (titleEl) titleEl.textContent = t.title;
-    if (descEl) descEl.textContent = t.description;
-    if (backHomeEl) backHomeEl.textContent = t.backHome;
-    if (goBackEl) goBackEl.textContent = t.goBack;
+    if (titleEl) titleEl.textContent = notFound.title;
+    if (descEl) descEl.textContent = notFound.description;
+    if (backHomeEl) backHomeEl.textContent = notFound.backHome;
+    if (goBackEl) goBackEl.textContent = notFound.goBack;
+    
+    // 更新页面标题
+    document.title = `404 - ${notFound.title}`;
   }
   
   // 监听语言变更事件
   window.addEventListener('localechange', function(e) {
-    const locale = e.detail?.locale || getLocale();
+    // @ts-ignore - CustomEvent detail property
+    const locale = (e.detail && e.detail.locale) ? e.detail.locale : getLocale();
     updatePageText(locale);
   });
   

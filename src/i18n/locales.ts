@@ -146,10 +146,40 @@ export const translations: Record<Locale, Translations> = {
 // 导出翻译对象供客户端使用
 export const clientTranslations = translations;
 
+// 从请求中获取语言偏好（服务端使用）
+export function getLocaleFromRequest(request: Request): Locale {
+  // 从 Cookie 中读取语言偏好
+  const cookieHeader = request.headers.get('cookie');
+  if (cookieHeader) {
+    const cookies = cookieHeader.split(';').reduce((acc, cookie) => {
+      const [key, value] = cookie.trim().split('=');
+      acc[key] = value;
+      return acc;
+    }, {} as Record<string, string>);
+    const locale = cookies['locale'];
+    if (locale === 'zh' || locale === 'en') {
+      return locale;
+    }
+  }
+  
+  // 如果没有 Cookie，尝试从 Accept-Language 请求头读取
+  const acceptLanguage = request.headers.get('accept-language');
+  if (acceptLanguage) {
+    if (acceptLanguage.toLowerCase().includes('zh')) {
+      return 'zh';
+    }
+    if (acceptLanguage.toLowerCase().includes('en')) {
+      return 'en';
+    }
+  }
+  
+  return 'zh'; // 默认中文
+}
+
 // 获取当前语言
 export function getLocale(): Locale {
   if (typeof window === 'undefined') {
-    return 'zh'; // 服务端默认中文
+    return 'zh'; // 服务端默认中文（需要 request 对象时使用 getLocaleFromRequest）
   }
   return (localStorage.getItem('locale') || 'zh') as Locale;
 }
