@@ -1,7 +1,7 @@
 ---
 // src/layouts/Layout.astro
 import "../styles/global.css";
-import { getLocaleFromRequest, t } from '../i18n/locales';
+import { getLocaleFromAstro, t } from '../i18n/locales';
 
 interface Props {
   title?: string;
@@ -17,7 +17,8 @@ const {
   type = "website"
 } = Astro.props;
 
-const locale = getLocaleFromRequest(Astro.request);
+// 使用安全函数获取语言，避免在预渲染模式下访问 Astro.request
+const locale = getLocaleFromAstro();
 const htmlLang = locale === 'zh' ? 'zh-CN' : 'en';
 
 // 默认描述（根据语言）

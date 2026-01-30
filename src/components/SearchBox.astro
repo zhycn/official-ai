@@ -1,13 +1,14 @@
 ---
 // Google风格的搜索框组件
-import { getLocaleFromRequest, t } from '../i18n/locales';
+import { getLocaleFromAstro, t } from '../i18n/locales';
 
 interface Props {
   variant?: 'desktop' | 'mobile';
 }
 
 const { variant = 'desktop' } = Astro.props;
-const locale = getLocaleFromRequest(Astro.request);
+// 使用安全函数获取语言，避免在预渲染模式下访问 Astro.request
+const locale = getLocaleFromAstro();
 const placeholder = t('search.placeholder', locale);
 
 // 根据 variant 生成唯一的 ID

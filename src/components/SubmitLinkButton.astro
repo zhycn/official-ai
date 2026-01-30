@@ -1,7 +1,8 @@
 ---
-import { getLocaleFromRequest, t, clientTranslations } from '../i18n/locales';
+import { getLocaleFromAstro, t, clientTranslations } from '../i18n/locales';
 
-const locale = getLocaleFromRequest(Astro.request);
+// 使用安全函数获取语言，避免在预渲染模式下访问 Astro.request
+const locale = getLocaleFromAstro();
 const href = 'https://github.com/zhycn/official-ai/issues';
 ---
 

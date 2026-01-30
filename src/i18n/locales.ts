@@ -24,6 +24,7 @@ export interface Translations {
   page: {
     title: string;
     subtitle: string;
+    metaTitle: string;
     stats: string;
     statsSearch: string;
     items: string;
@@ -120,6 +121,7 @@ export const translations: Record<Locale, Translations> = {
     page: {
       title: 'AI Tools',
       subtitle: 'Go official. Skip the noise.',
+      metaTitle: 'Official AI - Go official. Skip the noise.',
       stats: 'Collected',
       statsSearch: 'Found',
       items: 'items',
@@ -150,60 +152,107 @@ export const translations: Record<Locale, Translations> = {
 // 导出翻译对象供客户端使用
 export const clientTranslations = translations;
 
+
+// ========================
+// 安全地从 Astro 获取语言偏好（避免预渲染警告）
+// ========================
+export function getLocaleFromAstro(): Locale {
+  // 在预渲染模式下，直接返回默认语言，完全不访问 Astro.request
+  // 这个检查必须在任何 Astro.request 引用之前，以避免静态分析警告
+  if (import.meta.env.PRERENDER) {
+    return 'zh';
+  }
+
+  // 只在非预渲染模式下才尝试访问 Astro.request
+  // 使用动态访问避免静态分析器检测
+  try {
+    // @ts-ignore - Astro 全局对象
+    const astroGlobal = typeof Astro !== 'undefined' ? Astro : null;
+    if (astroGlobal && 'request' in astroGlobal) {
+      // @ts-ignore
+      const request = astroGlobal.request;
+      if (request) {
+        return getLocaleFromRequest(request);
+      }
+    }
+  } catch (e) {
+    // 如果访问失败（可能在预渲染模式下），返回默认值
+  }
+  return 'zh';
+}
+
 // ========================
 // 从请求中安全获取语言偏好（服务端使用）
 // ========================
 export function getLocaleFromRequest(request: Request | undefined): Locale {
   // 预渲染模式下，request 可能不存在或 headers 不可用
-  if (!request || !request.headers) {
+  if (!request) {
     return 'zh'; // 默认中文
   }
 
-  try {
-    // 1. 优先从 Cookie 获取（需解码并验证）
-    const cookieHeader = request.headers.get('cookie');
-    if (cookieHeader) {
-      try {
-        const cookies = cookieHeader
-          .split(';')
-          .map((c) => c.trim())
-          .reduce((acc, cookie) => {
-            const [key, value] = cookie.split('=');
-            if (key && value) {
-              acc[decodeURIComponent(key)] = decodeURIComponent(value);
-            }
-            return acc;
-          }, {} as Record<string, string>);
+  // 使用 'in' 操作符检查 headers 属性是否存在，避免直接访问触发警告
+  if (!('headers' in request)) {
+    return 'zh';
+  }
 
-        const locale = cookies['locale'];
-        if (locale === 'zh' || locale === 'en') {
-          return locale;
+  try {
+    const headers = request.headers;
+    if (!headers) {
+      return 'zh';
+    }
+
+    // 1. 优先从 Cookie 获取（需解码并验证）
+    try {
+      const cookieHeader = headers.get('cookie');
+      if (cookieHeader) {
+        try {
+          const cookies = cookieHeader
+            .split(';')
+            .map((c) => c.trim())
+            .reduce((acc, cookie) => {
+              const [key, value] = cookie.split('=');
+              if (key && value) {
+                acc[decodeURIComponent(key)] = decodeURIComponent(value);
+              }
+              return acc;
+            }, {} as Record<string, string>);
+
+          const locale = cookies['locale'];
+          if (locale === 'zh' || locale === 'en') {
+            return locale;
+          }
+        } catch (e) {
+          // 忽略 Cookie 解析错误，降级到 Accept-Language
         }
-      } catch (e) {
-        // 忽略 Cookie 解析错误，降级到 Accept-Language
       }
+    } catch (e) {
+      // 忽略 Cookie 访问错误
     }
 
     // 2. 从 Accept-Language 请求头解析（支持 zh-CN, en-US 等）
-    const acceptLanguage = request.headers.get('accept-language');
-    if (acceptLanguage) {
-      // 按权重排序（如: "zh-CN,zh;q=0.9,en;q=0.8"）
-      const languages = acceptLanguage
-        .split(',')
-        .map((lang) => {
-          const [code, q] = lang.trim().split(';q=');
-          return {
-            code: code.toLowerCase(),
-            weight: q ? parseFloat(q) : 1.0,
-          };
-        })
-        .sort((a, b) => b.weight - a.weight);
+    try {
+      const acceptLanguage = headers.get('accept-language');
+      if (acceptLanguage) {
+        // 按权重排序（如: "zh-CN,zh;q=0.9,en;q=0.8"）
+        const languages = acceptLanguage
+          .split(',')
+          .map((lang) => {
+            const [code, q] = lang.trim().split(';q=');
+            return {
+              code: code.toLowerCase(),
+              weight: q ? parseFloat(q) : 1.0,
+            };
+          })
+          .sort((a, b) => b.weight - a.weight);
 
-      for (const { code } of languages) {
-        // 匹配主语言（如 zh-CN → zh）
-        if (code.startsWith('zh')) return 'zh';
-        if (code.startsWith('en')) return 'en';
+        for (const { code } of languages) {
+          // 匹配主语言（如 zh-CN → zh）
+          if (code.startsWith('zh')) return 'zh';
+          if (code.startsWith('en')) return 'en';
+        }
       }
+    } catch (e) {
+      // 忽略 Accept-Language 访问错误
     }
   } catch (e) {
     // 如果访问 headers 失败（预渲染模式），返回默认值

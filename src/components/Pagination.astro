@@ -1,5 +1,5 @@
 ---
-import { getLocaleFromRequest, getAstroRequest, t, clientTranslations } from '../i18n/locales';
+import { getLocaleFromAstro, getAstroRequest, t, clientTranslations } from '../i18n/locales';
 
 interface Props {
   currentPage: number;
@@ -7,7 +7,8 @@ interface Props {
 }
 
 const { currentPage, totalPages } = Astro.props;
-const locale = getLocaleFromRequest(Astro.request);
+// 使用安全函数获取语言，避免在预渲染模式下访问 Astro.request
+const locale = getLocaleFromAstro();
 ---
 
 <div class="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-200/60 dark:border-gray-800/60">

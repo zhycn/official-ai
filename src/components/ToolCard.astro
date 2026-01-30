@@ -1,5 +1,5 @@
 ---
-import { getLocaleFromRequest, getAstroRequest, t } from '../i18n/locales';
+import { getLocaleFromAstro, getAstroRequest, t } from '../i18n/locales';
 
 interface Props {
   id: string;
@@ -9,7 +9,8 @@ interface Props {
 }
 
 const { name, description, url } = Astro.props;
-const locale = getLocaleFromRequest(Astro.request);
+// 使用安全函数获取语言，避免在预渲染模式下访问 Astro.request
+const locale = getLocaleFromAstro();
 ---
 
 <a

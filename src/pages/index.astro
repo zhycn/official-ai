@@ -5,12 +5,13 @@ import ToolCard from '../components/ToolCard.astro';
 import Pagination from '../components/Pagination.astro';
 import Footer from '../components/Footer.astro';
 import toolsData from '../../public/data/tools.json';
-import { getLocaleFromRequest, t, clientTranslations } from '../i18n/locales';
+import { getLocaleFromAstro, getLocaleFromRequest, t, clientTranslations } from '../i18n/locales';
 import { ITEMS_PER_PAGE, SEARCH_DEBOUNCE_MS, FUSE_SEARCH_LIMIT, FUSE_SEARCH_THRESHOLD } from '../utils/constants';
 
 // 将翻译对象序列化为 JSON，以便在客户端使用
 const translationsJSON = JSON.stringify(clientTranslations);
-const locale = getLocaleFromRequest(Astro.request);
+// 使用安全函数获取语言，避免在预渲染模式下访问 Astro.request
+const locale = getLocaleFromAstro();
 
 // 从 URL 读取页码（服务端）
 const urlPageParam = Astro.url.searchParams.get('page');
@@ -22,7 +23,7 @@ const endIndex = startIndex + ITEMS_PER_PAGE;
 const initialTools = toolsData.slice(startIndex, endIndex);
 ---
 
-<Layout title="Skills - skill0">
+<Layout title={t('page.metaTitle', locale)}>
   <div class="min-h-screen flex flex-col bg-white dark:bg-gray-900">
     <Navbar />
     
