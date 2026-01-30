@@ -1,5 +1,6 @@
 ---
-import { getLocaleFromAstro, getAstroRequest, t, clientTranslations } from '../i18n/locales';
+import { getLocaleFromAstro, t, clientTranslations } from '../i18n/locales';
+import { COLORS } from '../utils/constants';
 
 interface Props {
   currentPage: number;
@@ -19,14 +20,14 @@ const locale = getLocaleFromAstro();
     <button
       id="prev-page"
       disabled={currentPage === 1}
-      class="inline-flex items-center justify-center px-4 py-2 sm:px-5 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-[#FFF5F4] dark:hover:bg-[#FF5A50]/10 hover:border-[#FF5A50] dark:hover:border-[#FF6B60] hover:text-[#FF5A50] dark:hover:text-[#FF6B60] transition-all duration-200 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 disabled:hover:text-gray-700 disabled:hover:shadow-none dark:disabled:hover:bg-gray-800 dark:disabled:hover:border-gray-700 dark:disabled:hover:text-gray-300 touch-manipulation"
+      class={`inline-flex items-center justify-center px-4 py-2 sm:px-5 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-[${COLORS.PRODUCTHUNT_LIGHT}] dark:hover:bg-[${COLORS.PRODUCTHUNT}]/10 hover:border-[${COLORS.PRODUCTHUNT}] dark:hover:border-[${COLORS.PRODUCTHUNT_DARK}] hover:text-[${COLORS.PRODUCTHUNT}] dark:hover:text-[${COLORS.PRODUCTHUNT_DARK}] transition-all duration-200 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 disabled:hover:text-gray-700 disabled:hover:shadow-none dark:disabled:hover:bg-gray-800 dark:disabled:hover:border-gray-700 dark:disabled:hover:text-gray-300 touch-manipulation`}
     >
       <span id="prev-page-text">{t('pagination.prev', locale)}</span>
     </button>
     <button
       id="next-page"
       disabled={currentPage === totalPages}
-      class="inline-flex items-center justify-center px-4 py-2 sm:px-5 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-[#FFF5F4] dark:hover:bg-[#FF5A50]/10 hover:border-[#FF5A50] dark:hover:border-[#FF6B60] hover:text-[#FF5A50] dark:hover:text-[#FF6B60] transition-all duration-200 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 disabled:hover:text-gray-700 disabled:hover:shadow-none dark:disabled:hover:bg-gray-800 dark:disabled:hover:border-gray-700 dark:disabled:hover:text-gray-300 touch-manipulation"
+      class={`inline-flex items-center justify-center px-4 py-2 sm:px-5 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-[${COLORS.PRODUCTHUNT_LIGHT}] dark:hover:bg-[${COLORS.PRODUCTHUNT}]/10 hover:border-[${COLORS.PRODUCTHUNT}] dark:hover:border-[${COLORS.PRODUCTHUNT_DARK}] hover:text-[${COLORS.PRODUCTHUNT}] dark:hover:text-[${COLORS.PRODUCTHUNT_DARK}] transition-all duration-200 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 disabled:hover:text-gray-700 disabled:hover:shadow-none dark:disabled:hover:bg-gray-800 dark:disabled:hover:border-gray-700 dark:disabled:hover:text-gray-300 touch-manipulation`}
     >
       <span id="next-page-text">{t('pagination.next', locale)}</span>
     </button>

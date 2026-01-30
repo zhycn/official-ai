@@ -1,6 +1,7 @@
 ---
 // 语言切换组件
-import { getLocaleFromAstro, getAstroRequest, clientTranslations } from '../i18n/locales';
+import { getLocaleFromAstro, clientTranslations } from '../i18n/locales';
+import { COLORS } from '../utils/constants';
 
 // 使用安全函数获取语言，避免在预渲染模式下访问 Astro.request
 const locale = getLocaleFromAstro();
@@ -25,7 +26,7 @@ const languageConfig = clientTranslations[safeLocale].language;
   </button>
 </div>
 
-<script define:vars={{ clientTranslations }}>
+<script define:vars={{ clientTranslations, COLORS }}>
   // ==================== 工具函数内联 ====================
   
   // 获取当前语言（客户端）
@@ -110,7 +111,7 @@ const languageConfig = clientTranslations[safeLocale].language;
       const totalCount = total !== undefined ? String(total) : (document.getElementById('total-count')?.textContent || '0');
       
       statsText.innerHTML = `<span class="inline-flex items-center gap-2">
-        <span class="px-2.5 py-1 rounded-md bg-[#FFF5F4] dark:bg-[#FF5A50]/10 text-sm font-medium text-[#FF5A50] dark:text-[#FF6B60]">${escapeHtml(statsLabel)}</span>
+        <span class="px-2.5 py-1 rounded-md bg-[${COLORS.PRODUCTHUNT_LIGHT}] dark:bg-[${COLORS.PRODUCTHUNT}]/10 text-sm font-medium text-[${COLORS.PRODUCTHUNT}] dark:text-[${COLORS.PRODUCTHUNT_DARK}]">${escapeHtml(statsLabel)}</span>
         <span id="total-count" class="font-semibold text-gray-900 dark:text-white">${escapeHtml(totalCount)}</span>
         <span>${escapeHtml(t.page.items)}</span>
       </span>`;

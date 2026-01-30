@@ -1,11 +1,12 @@
 ---
 // Logo
+import { COLORS } from '../utils/constants';
 const href = '/';
 ---
 <div class="shrink-0">
-    <a href={href} class="flex items-center gap-1.5 text-xl sm:text-2xl font-bold text-gray-900 dark:text-white transition-colors duration-200 hover:text-[#FF5A50] dark:hover:text-[#FF5A50]">
+    <a href={href} class={`flex items-center gap-1.5 text-xl sm:text-2xl font-bold text-gray-900 dark:text-white transition-colors duration-200 hover:text-[${COLORS.PRODUCTHUNT}] dark:hover:text-[${COLORS.PRODUCTHUNT}]`}>
         <span>Official</span>
-        <span class="text-[#FF5A50]">AI</span>
+        <span class={`text-[${COLORS.PRODUCTHUNT}]`}>AI</span>
         <span class="text-gray-400 dark:text-gray-500 text-lg font-semibold">_</span>
     </a>
 </div>

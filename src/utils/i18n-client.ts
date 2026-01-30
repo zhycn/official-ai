@@ -3,6 +3,9 @@
  */
 
 import type { Locale, Translations } from '../i18n/locales';
+import { COLORS } from './constants';
+import { escapeHtml } from './dom';
+import { COLORS } from './constants';
 
 /**
  * 获取当前语言（客户端）
@@ -18,7 +21,11 @@ export function getClientLocale(): Locale {
       return saved;
     }
     
-    const browserLang = navigator.language || (navigator as any).userLanguage;
+    // 兼容旧版浏览器（IE）
+    const browserLang = navigator.language || 
+      (typeof (navigator as { userLanguage?: string }).userLanguage !== 'undefined' 
+        ? (navigator as { userLanguage: string }).userLanguage 
+        : '');
     if (browserLang.startsWith('zh')) return 'zh';
     if (browserLang.startsWith('en')) return 'en';
   } catch (e) {
@@ -54,7 +61,7 @@ export function tClient(
 ): string {
   const currentLocale = locale || getClientLocale();
   const keys = key.split('.');
-  let value: any = translations[currentLocale];
+  let value: unknown = translations[currentLocale];
   
   for (const k of keys) {
     if (value == null || typeof value !== 'object') {
@@ -121,15 +128,8 @@ export class I18nUpdater {
     const statsLabel = isSearching ? t.page.statsSearch : t.page.stats;
     const totalCount = total !== undefined ? String(total) : (document.getElementById('total-count')?.textContent || '0');
     
-    // 转义 HTML 以防止 XSS
-    const escapeHtml = (text: string) => {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    };
-    
     statsText.innerHTML = `<span class="inline-flex items-center gap-2">
-      <span class="px-2.5 py-1 rounded-md bg-[#FFF5F4] dark:bg-[#FF5A50]/10 text-sm font-medium text-[#FF5A50] dark:text-[#FF6B60]">${escapeHtml(statsLabel)}</span>
+      <span class="px-2.5 py-1 rounded-md bg-[${COLORS.PRODUCTHUNT_LIGHT}] dark:bg-[${COLORS.PRODUCTHUNT}]/10 text-sm font-medium text-[${COLORS.PRODUCTHUNT}] dark:text-[${COLORS.PRODUCTHUNT_DARK}]">${escapeHtml(statsLabel)}</span>
       <span id="total-count" class="font-semibold text-gray-900 dark:text-white">${escapeHtml(totalCount)}</span>
       <span>${escapeHtml(t.page.items)}</span>
     </span>`;
@@ -140,13 +140,6 @@ export class I18nUpdater {
    */
   updatePagination(locale: Locale): void {
     const t = this.translations[locale] || this.translations['zh'];
-    
-    // 转义 HTML 以防止 XSS
-    const escapeHtml = (text: string) => {
-      const div = document.createElement('div');
-      div.textContent = text;
-      return div.innerHTML;
-    };
     
     const pageInfo = document.getElementById('pagination-page-info');
     if (pageInfo) {

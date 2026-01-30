@@ -6,6 +6,7 @@ import Fuse from 'fuse.js';
 import type { Locale, Translations } from '../i18n/locales';
 import { escapeHtml } from './dom';
 import { FUSE_SEARCH_LIMIT, FUSE_SEARCH_THRESHOLD } from './constants';
+import { logger } from './logger';
 
 export interface Tool {
   id?: string;
@@ -41,6 +42,7 @@ export function performFuseSearch(
     const results = fuse.search(query, { limit: limit || FUSE_SEARCH_LIMIT });
     return results.map((result) => result.item);
   } catch (error) {
+    logger.error('Fuse search error:', error);
     return [];
   }
 }

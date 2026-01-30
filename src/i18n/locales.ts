@@ -12,6 +12,8 @@ export interface Translations {
     placeholder: string;
     noResults: string;
     clear: string;
+    toggle: string;
+    suggestions: string;
   };
   // 主题切换
   theme: {
@@ -111,6 +113,8 @@ export const translations: Record<Locale, Translations> = {
       placeholder: 'Search AI tools...',
       noResults: 'No matching tools found',
       clear: 'Clear search',
+      toggle: 'Search',
+      suggestions: 'Search suggestions',
     },
     theme: {
       light: 'Light',
@@ -289,7 +293,7 @@ export function t(key: string, locale?: Locale): string {
 
   // 安全遍历嵌套 key（如 'notFound.title'）
   const keys = key.split('.');
-  let value: any = translations[currentLocale];
+  let value: unknown = translations[currentLocale];
 
   for (const k of keys) {
     if (value == null || typeof value !== 'object') {

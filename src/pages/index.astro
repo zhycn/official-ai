@@ -5,8 +5,8 @@ import ToolCard from '../components/ToolCard.astro';
 import Pagination from '../components/Pagination.astro';
 import Footer from '../components/Footer.astro';
 import toolsData from '../../public/data/tools.json';
-import { getLocaleFromAstro, getLocaleFromRequest, t, clientTranslations } from '../i18n/locales';
-import { ITEMS_PER_PAGE, SEARCH_DEBOUNCE_MS, FUSE_SEARCH_LIMIT, FUSE_SEARCH_THRESHOLD } from '../utils/constants';
+import { getLocaleFromAstro, t, clientTranslations } from '../i18n/locales';
+import { ITEMS_PER_PAGE, SEARCH_DEBOUNCE_MS, FUSE_SEARCH_LIMIT, FUSE_SEARCH_THRESHOLD, DOM_IDS, COLORS } from '../utils/constants';
 
 // 将翻译对象序列化为 JSON，以便在客户端使用
 const translationsJSON = JSON.stringify(clientTranslations);
@@ -72,24 +72,8 @@ const initialTools = toolsData.slice(startIndex, endIndex);
   </div>
 </Layout>
 
-<script define:vars={{ toolsData, ITEMS_PER_PAGE, translationsJSON }}>
-  // ==================== 工具函数内联 ====================
-  
-  // 常量定义
-  const SEARCH_DEBOUNCE_MS = 150;
-  const FUSE_SEARCH_LIMIT = 8;
-  const FUSE_SEARCH_THRESHOLD = 0.3;
-  const DOM_IDS = {
-    TOOLS_CONTAINER: 'tools-container',
-    PAGINATION_CONTAINER: 'pagination-container',
-    SEARCH_INPUT: 'search-input',
-    SEARCH_CLEAR: 'search-clear',
-    SEARCH_CONTAINER: 'search-container',
-    SEARCH_SUGGESTIONS: 'search-suggestions',
-    SUGGESTIONS_LIST: 'suggestions-list',
-    STATS_TEXT: 'stats-text',
-    TOTAL_COUNT: 'total-count',
-  };
+<script define:vars={{ toolsData, ITEMS_PER_PAGE, SEARCH_DEBOUNCE_MS, FUSE_SEARCH_LIMIT, FUSE_SEARCH_THRESHOLD, DOM_IDS, COLORS, translationsJSON }}>
+  // ==================== 工具函数 ====================
   
   // HTML 转义函数
   function escapeHtml(text) {
@@ -169,7 +153,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     warn: (...args) => { if (isDev) console.warn('[Official AI]', ...args); },
   };
   
-  // ==================== 国际化更新器 ====================
+  // ==================== 国际化更新器类 ====================
   class I18nUpdater {
     constructor(translations) {
       this.translations = translations;
@@ -215,7 +199,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       const totalCount = total !== undefined ? String(total) : (document.getElementById('total-count')?.textContent || '0');
       
       statsText.innerHTML = `<span class="inline-flex items-center gap-2">
-        <span class="px-2.5 py-1 rounded-md bg-[#FFF5F4] dark:bg-[#FF5A50]/10 text-sm font-medium text-[#FF5A50] dark:text-[#FF6B60]">${escapeHtml(statsLabel)}</span>
+        <span class="px-2.5 py-1 rounded-md bg-[${COLORS.PRODUCTHUNT_LIGHT}] dark:bg-[${COLORS.PRODUCTHUNT}]/10 text-sm font-medium text-[${COLORS.PRODUCTHUNT}] dark:text-[${COLORS.PRODUCTHUNT_DARK}]">${escapeHtml(statsLabel)}</span>
         <span id="total-count" class="font-semibold text-gray-900 dark:text-white">${escapeHtml(totalCount)}</span>
         <span>${escapeHtml(t.page.items)}</span>
       </span>`;
@@ -272,7 +256,6 @@ const initialTools = toolsData.slice(startIndex, endIndex);
   }
   
   // ==================== 搜索管理器类 ====================
-  
   class SearchManager {
     constructor(toolsData, translations) {
       this.toolsData = toolsData;
@@ -280,6 +263,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       this.fuse = null;
       this.isInitialized = false;
       this.initPromise = null;
+      this.fuseLoadPromise = null;
     }
     
     /**
@@ -362,7 +346,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     }
     
     /**
-     * 执行搜索
+     * 执行搜索（去重）
      */
     search(query, limit = FUSE_SEARCH_LIMIT) {
       if (!this.isInitialized || !this.fuse || !query.trim()) {
@@ -371,7 +355,18 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       
       try {
         const results = this.fuse.search(query, { limit });
-        return results.map((result) => result.item);
+        const items = results.map((result) => result.item);
+        
+        // 去重：基于 id 或 name
+        const seen = new Set();
+        return items.filter((tool) => {
+          const key = tool.id || tool.name;
+          if (seen.has(key)) {
+            return false;
+          }
+          seen.add(key);
+          return true;
+        });
       } catch (error) {
         logger.error('Search error:', error);
         return [];
@@ -440,8 +435,8 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       
       container.innerHTML = `
         <div class="col-span-full flex flex-col items-center justify-center py-12 px-4">
-          <div class="w-24 h-24 mb-5 rounded-full bg-[#FFF5F4] dark:bg-[#FF5A50]/10 flex items-center justify-center">
-            <svg class="w-12 h-12 text-[#FF5A50] dark:text-[#FF6B60]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-24 h-24 mb-5 rounded-full bg-[${COLORS.PRODUCTHUNT_LIGHT}] dark:bg-[${COLORS.PRODUCTHUNT}]/10 flex items-center justify-center">
+            <svg class="w-12 h-12 text-[${COLORS.PRODUCTHUNT}] dark:text-[${COLORS.PRODUCTHUNT_DARK}]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
@@ -485,17 +480,17 @@ const initialTools = toolsData.slice(startIndex, endIndex);
             href="${escapeHtml(tool.url)}"
             target="_blank"
             rel="noopener noreferrer"
-            class="group relative block p-5 sm:p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-[#FF5A50] dark:hover:border-[#FF6B60] hover:shadow-lg hover:shadow-[#FF5A50]/10 dark:hover:shadow-[#FF6B60]/20 transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.02] before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-[#FFF5F4]/0 before:via-[#FFF5F4]/0 before:to-[#FFF5F4]/0 hover:before:from-[#FFF5F4]/60 hover:before:via-[#FFF5F4]/30 hover:before:to-transparent dark:hover:before:from-[#FF5A50]/5 dark:hover:before:via-[#FF5A50]/3 dark:hover:before:to-transparent before:transition-all before:duration-300 before:-z-10"
+            class="group relative block p-5 sm:p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-[${COLORS.PRODUCTHUNT}] dark:hover:border-[${COLORS.PRODUCTHUNT_DARK}] hover:shadow-lg hover:shadow-[${COLORS.PRODUCTHUNT}]/10 dark:hover:shadow-[${COLORS.PRODUCTHUNT_DARK}]/20 transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.02] before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-[${COLORS.PRODUCTHUNT_LIGHT}]/0 before:via-[${COLORS.PRODUCTHUNT_LIGHT}]/0 before:to-[${COLORS.PRODUCTHUNT_LIGHT}]/0 hover:before:from-[${COLORS.PRODUCTHUNT_LIGHT}]/60 hover:before:via-[${COLORS.PRODUCTHUNT_LIGHT}]/30 hover:before:to-transparent dark:hover:before:from-[${COLORS.PRODUCTHUNT}]/5 dark:hover:before:via-[${COLORS.PRODUCTHUNT}]/3 dark:hover:before:to-transparent before:transition-all before:duration-300 before:-z-10"
           >
             <div class="relative z-10 flex items-start justify-between mb-2.5 sm:mb-3">
               <div class="flex items-center gap-3 flex-1 min-w-0">
-                <span class="flex-shrink-0 w-2.5 h-2.5 bg-gradient-to-br from-[#FF5A50] via-[#FF6B60] to-[#FF5A50] rounded-full mt-1 shadow-sm shadow-[#FF5A50]/50 ring-1 ring-[#FF5A50]/20"></span>
-                <h3 class="font-semibold text-gray-900 dark:text-white truncate group-hover:text-[#FF5A50] dark:group-hover:text-[#FF6B60] transition-colors duration-300 text-base sm:text-lg leading-snug">
+                <span class="flex-shrink-0 w-2.5 h-2.5 bg-gradient-to-br from-[${COLORS.PRODUCTHUNT}] via-[${COLORS.PRODUCTHUNT_DARK}] to-[${COLORS.PRODUCTHUNT}] rounded-full mt-1 shadow-sm shadow-[${COLORS.PRODUCTHUNT}]/50 ring-1 ring-[${COLORS.PRODUCTHUNT}]/20"></span>
+                <h3 class="font-semibold text-gray-900 dark:text-white truncate group-hover:text-[${COLORS.PRODUCTHUNT}] dark:group-hover:text-[${COLORS.PRODUCTHUNT_DARK}] transition-colors duration-300 text-base sm:text-lg leading-snug">
                   ${escapeHtml(tool.name)}
                 </h3>
               </div>
               <button
-                class="flex-shrink-0 p-1.5 sm:p-2 text-gray-400 dark:text-gray-500 hover:text-[#FF5A50] dark:hover:text-[#FF6B60] hover:bg-[#FFF5F4] dark:hover:bg-[#FF5A50]/10 rounded-lg transition-all duration-300 active:scale-95 touch-manipulation"
+                class="flex-shrink-0 p-1.5 sm:p-2 text-gray-400 dark:text-gray-500 hover:text-[${COLORS.PRODUCTHUNT}] dark:hover:text-[${COLORS.PRODUCTHUNT_DARK}] hover:bg-[${COLORS.PRODUCTHUNT_LIGHT}] dark:hover:bg-[${COLORS.PRODUCTHUNT}]/10 rounded-lg transition-all duration-300 active:scale-95 touch-manipulation"
                 aria-label="${escapeHtml(openLinkLabel)}"
                 onclick="event.preventDefault(); event.stopPropagation(); window.open('${escapeHtml(tool.url)}', '_blank', 'noopener,noreferrer');"
               >
@@ -591,7 +586,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     // 创建上一页按钮
     const prevBtn = document.createElement('button');
     prevBtn.id = 'prev-page';
-    prevBtn.className = 'inline-flex items-center justify-center px-4 py-2 sm:px-5 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-[#FFF5F4] dark:hover:bg-[#FF5A50]/10 hover:border-[#FF5A50] dark:hover:border-[#FF6B60] hover:text-[#FF5A50] dark:hover:text-[#FF6B60] transition-all duration-200 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 disabled:hover:text-gray-700 disabled:hover:shadow-none dark:disabled:hover:bg-gray-800 dark:disabled:hover:border-gray-700 dark:disabled:hover:text-gray-300 touch-manipulation';
+    prevBtn.className = `inline-flex items-center justify-center px-4 py-2 sm:px-5 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-[${COLORS.PRODUCTHUNT_LIGHT}] dark:hover:bg-[${COLORS.PRODUCTHUNT}]/10 hover:border-[${COLORS.PRODUCTHUNT}] dark:hover:border-[${COLORS.PRODUCTHUNT_DARK}] hover:text-[${COLORS.PRODUCTHUNT}] dark:hover:text-[${COLORS.PRODUCTHUNT_DARK}] transition-all duration-200 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 disabled:hover:text-gray-700 disabled:hover:shadow-none dark:disabled:hover:bg-gray-800 dark:disabled:hover:border-gray-700 dark:disabled:hover:text-gray-300 touch-manipulation`;
     prevBtn.disabled = page === 1;
     
     const prevText = document.createElement('span');
@@ -603,7 +598,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     // 创建下一页按钮
     const nextBtn = document.createElement('button');
     nextBtn.id = 'next-page';
-    nextBtn.className = 'inline-flex items-center justify-center px-4 py-2 sm:px-5 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-[#FFF5F4] dark:hover:bg-[#FF5A50]/10 hover:border-[#FF5A50] dark:hover:border-[#FF6B60] hover:text-[#FF5A50] dark:hover:text-[#FF6B60] transition-all duration-200 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 disabled:hover:text-gray-700 disabled:hover:shadow-none dark:disabled:hover:bg-gray-800 dark:disabled:hover:border-gray-700 dark:disabled:hover:text-gray-300 touch-manipulation';
+    nextBtn.className = `inline-flex items-center justify-center px-4 py-2 sm:px-5 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-[${COLORS.PRODUCTHUNT_LIGHT}] dark:hover:bg-[${COLORS.PRODUCTHUNT}]/10 hover:border-[${COLORS.PRODUCTHUNT}] dark:hover:border-[${COLORS.PRODUCTHUNT_DARK}] hover:text-[${COLORS.PRODUCTHUNT}] dark:hover:text-[${COLORS.PRODUCTHUNT_DARK}] transition-all duration-200 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 disabled:hover:text-gray-700 disabled:hover:shadow-none dark:disabled:hover:bg-gray-800 dark:disabled:hover:border-gray-700 dark:disabled:hover:text-gray-300 touch-manipulation`;
     nextBtn.disabled = page === totalPages;
     
     const nextText = document.createElement('span');
@@ -721,41 +716,32 @@ const initialTools = toolsData.slice(startIndex, endIndex);
             class="suggestion-item px-3 py-2 cursor-pointer"
             data-index="${index}"
             data-name="${escapeHtml(tool.name)}"
+            role="option"
+            aria-selected="${index === selectedIndex ? 'true' : 'false'}"
+            id="suggestion-${index}"
+            tabindex="${index === selectedIndex ? '0' : '-1'}"
           >
-            <div class="suggestion-content">
-              <div class="suggestion-icon">
-                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <div class="suggestion-text">
-                <div class="suggestion-title text-gray-900 dark:text-gray-100">
-                  ${searchManager.highlightText(tool.name, query)}
-                </div>
-                <div class="suggestion-description text-gray-600 dark:text-gray-400 line-clamp-1">
-                  ${searchManager.highlightText(tool.description, query)}
-                </div>
-              </div>
+            <div class="suggestion-icon" aria-hidden="true">
+              <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
             </div>
+            <span class="suggestion-title text-gray-900 dark:text-gray-100">
+              ${searchManager.highlightText(tool.name, query)}
+            </span>
           </div>
         `
           )
           .join('');
 
         suggestionsList.innerHTML = suggestionsHTML;
-
-        // 绑定点击事件 - 使用事件委托更高效
-        suggestionsList.addEventListener('click', function(e) {
-          const item = e.target.closest('.suggestion-item');
-          if (item) {
-            e.preventDefault();
-            e.stopPropagation();
-            const index = parseInt(item.getAttribute('data-index'), 10);
-            if (!isNaN(index)) {
-              selectSuggestion(index);
-            }
-          }
-        });
+        // 注意：点击事件已在 bindSearchEvents 中通过事件委托统一处理，无需重复绑定
+        
+        // 更新 ARIA 属性
+        suggestionsContainer.setAttribute('aria-expanded', 'true');
+        if (suggestions.length > 0) {
+          suggestionsContainer.setAttribute('aria-owns', suggestions.map((_, i) => `suggestion-${i}`).join(' '));
+        }
 
         suggestionsContainer.classList.remove('hidden');
         selectedIndex = -1;

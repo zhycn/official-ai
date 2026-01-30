@@ -1,5 +1,6 @@
 ---
 import { getLocaleFromAstro, t, clientTranslations } from '../i18n/locales';
+import { COLORS } from '../utils/constants';
 
 // 使用安全函数获取语言，避免在预渲染模式下访问 Astro.request
 const locale = getLocaleFromAstro();
@@ -10,7 +11,7 @@ const href = 'https://github.com/zhycn/official-ai/issues';
     href={href}
     target="_blank"
     rel="noopener noreferrer"
-    class="px-4 py-2.5 min-w-[100px] text-center text-sm font-medium text-white bg-[#FF5A50] hover:bg-[#E84A3F] dark:bg-[#FF5A50] dark:hover:bg-[#E84A3F] rounded-lg transition-colors duration-200 touch-manipulation shadow-sm hover:shadow-md"
+    class={`px-4 py-2.5 min-w-[100px] text-center text-sm font-medium text-white bg-[${COLORS.PRODUCTHUNT}] hover:bg-[${COLORS.PRODUCTHUNT_HOVER}] dark:bg-[${COLORS.PRODUCTHUNT}] dark:hover:bg-[${COLORS.PRODUCTHUNT_HOVER}] rounded-lg transition-colors duration-200 touch-manipulation shadow-sm hover:shadow-md`}
 >
     <span id="submit-link-text">{t('nav.submit', locale)}</span>
 </a>

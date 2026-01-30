@@ -64,8 +64,9 @@ const locale = getLocaleFromAstro();
   
   // 更新页面文本
   function updatePageText(locale) {
-    // @ts-ignore - locale is a valid key
-    const notFound = clientTranslations[locale]?.notFound || clientTranslations['zh'].notFound;
+    // 确保 locale 是有效的键
+    const validLocale = (locale === 'zh' || locale === 'en') ? locale : 'zh';
+    const notFound = clientTranslations[validLocale]?.notFound || clientTranslations['zh'].notFound;
     
     const titleEl = document.getElementById('not-found-title');
     const descEl = document.getElementById('not-found-description');
@@ -83,8 +84,11 @@ const locale = getLocaleFromAstro();
   
   // 监听语言变更事件
   window.addEventListener('localechange', function(e) {
-    // @ts-ignore - CustomEvent detail property
-    const locale = (e.detail && e.detail.locale) ? e.detail.locale : getLocale();
+    // 类型安全的 CustomEvent detail 访问
+    const event = e instanceof CustomEvent ? e : null;
+    const locale = (event?.detail?.locale === 'zh' || event?.detail?.locale === 'en') 
+      ? event.detail.locale 
+      : getLocale();
     updatePageText(locale);
   });
   
