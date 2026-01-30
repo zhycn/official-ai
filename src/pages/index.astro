@@ -26,18 +26,18 @@ const initialTools = toolsData.slice(startIndex, endIndex);
   <div class="min-h-screen flex flex-col bg-white dark:bg-gray-900">
     <Navbar />
     
-    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 w-full">
+    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10 w-full">
       <!-- 标题信息 -->
-      <div class="mb-8 sm:mb-12">
-        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4 tracking-tight leading-tight">
+      <div class="mb-6 sm:mb-8">
+        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3 tracking-tight leading-tight">
           {t('page.title', locale)}
         </h1>
-        <p class="text-sm sm:text-base text-gray-500 dark:text-gray-400 mb-4 sm:mb-5 italic font-light">
+        <p class="text-sm sm:text-base text-gray-500 dark:text-gray-400 mb-3 sm:mb-4 italic font-light">
           {t('page.subtitle', locale)}
         </p>
         <p class="text-base sm:text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
           <span id="stats-text" class="inline-flex items-center gap-2">
-            <span class="px-2.5 py-1 rounded-md bg-[#FFF5F4] dark:bg-[#FF5A50]/10 text-sm font-medium text-[#FF5A50] dark:text-[#FF6B60]">
+            <span class="px-2.5 py-1 rounded-md bg-producthunt-light dark:bg-producthunt/10 text-sm font-medium text-producthunt dark:text-producthunt-dark">
               {t('page.stats', locale)}
             </span>
             <span id="total-count" class="font-semibold text-gray-900 dark:text-white">{toolsData.length}</span>
@@ -47,7 +47,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       </div>
 
       <!-- 工具卡片列表 -->
-      <div id="tools-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 lg:gap-6 mb-10 sm:mb-12">
+      <div id="tools-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 mb-8 sm:mb-10">
         {initialTools.map((tool) => (
           <ToolCard
             id={tool.id}
@@ -438,8 +438,8 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       const emptyState = t.emptyState;
       
       container.innerHTML = `
-        <div class="col-span-full flex flex-col items-center justify-center py-16 px-4">
-          <div class="w-24 h-24 mb-6 rounded-full bg-[#FFF5F4] dark:bg-[#FF5A50]/10 flex items-center justify-center">
+        <div class="col-span-full flex flex-col items-center justify-center py-12 px-4">
+          <div class="w-24 h-24 mb-5 rounded-full bg-[#FFF5F4] dark:bg-[#FF5A50]/10 flex items-center justify-center">
             <svg class="w-12 h-12 text-[#FF5A50] dark:text-[#FF6B60]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
@@ -486,7 +486,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
             rel="noopener noreferrer"
             class="group relative block p-5 sm:p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-[#FF5A50] dark:hover:border-[#FF6B60] hover:shadow-lg hover:shadow-[#FF5A50]/10 dark:hover:shadow-[#FF6B60]/20 transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.02] before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-[#FFF5F4]/0 before:via-[#FFF5F4]/0 before:to-[#FFF5F4]/0 hover:before:from-[#FFF5F4]/60 hover:before:via-[#FFF5F4]/30 hover:before:to-transparent dark:hover:before:from-[#FF5A50]/5 dark:hover:before:via-[#FF5A50]/3 dark:hover:before:to-transparent before:transition-all before:duration-300 before:-z-10"
           >
-            <div class="relative z-10 flex items-start justify-between mb-3 sm:mb-4">
+            <div class="relative z-10 flex items-start justify-between mb-2.5 sm:mb-3">
               <div class="flex items-center gap-3 flex-1 min-w-0">
                 <span class="flex-shrink-0 w-2.5 h-2.5 bg-gradient-to-br from-[#FF5A50] via-[#FF6B60] to-[#FF5A50] rounded-full mt-1 shadow-sm shadow-[#FF5A50]/50 ring-1 ring-[#FF5A50]/20"></span>
                 <h3 class="font-semibold text-gray-900 dark:text-white truncate group-hover:text-[#FF5A50] dark:group-hover:text-[#FF6B60] transition-colors duration-300 text-base sm:text-lg leading-snug">
@@ -575,7 +575,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
 
     // 创建分页容器
     const paginationDiv = document.createElement('div');
-    paginationDiv.className = 'flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0 mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-gray-200/60 dark:border-gray-800/60';
+    paginationDiv.className = 'flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-200/60 dark:border-gray-800/60';
     
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'flex gap-3';
