@@ -10,7 +10,7 @@ const placeholder = t('search.placeholder', locale);
   <div class="relative group">
     <!-- 搜索图标 -->
     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-      <svg class="h-5 w-5 text-gray-400 dark:text-gray-500 group-focus-within:text-orange-500 dark:group-focus-within:text-orange-400 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="h-5 w-5 text-gray-400 dark:text-gray-500 group-focus-within:text-[#FF5A50] dark:group-focus-within:text-[#FF6B60] transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
       </svg>
     </div>
@@ -47,6 +47,7 @@ const placeholder = t('search.placeholder', locale);
   <div
     id="search-suggestions"
     class="hidden absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl max-h-96 overflow-y-auto z-50"
+    style="box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);"
   >
     <div id="suggestions-list" class="py-1">
       <!-- 建议项将动态插入这里 -->
@@ -79,19 +80,19 @@ const placeholder = t('search.placeholder', locale);
   }
   
   .suggestion-item:hover {
-    background-color: rgba(0, 0, 0, 0.05);
+    background-color: rgba(255, 90, 80, 0.08);
   }
   
   .dark .suggestion-item:hover {
-    background-color: rgba(255, 255, 255, 0.08);
+    background-color: rgba(255, 107, 96, 0.12);
   }
   
   .suggestion-item.active {
-    background-color: rgba(0, 0, 0, 0.08);
+    background-color: rgba(255, 90, 80, 0.12);
   }
   
   .dark .suggestion-item.active {
-    background-color: rgba(255, 255, 255, 0.12);
+    background-color: rgba(255, 107, 96, 0.18);
   }
   
   /* 简化的搜索建议项布局 */
@@ -174,10 +175,20 @@ const placeholder = t('search.placeholder', locale);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   }
   
-  /* 深色主题聚焦样式 - 确保优先级最高 */
+  /* 浅色主题聚焦样式 - ProductHunt 橙色 */
+  .search-input:focus,
+  .search-input:focus-visible {
+    box-shadow: 0 2px 8px rgba(255, 90, 80, 0.25) !important;
+    background-color: white !important;
+    color: rgb(17, 24, 39) !important;
+    outline: none !important;
+    border: none !important;
+  }
+  
+  /* 深色主题聚焦样式 - ProductHunt 橙色 */
   .dark .search-input:focus,
   .dark .search-input:focus-visible {
-    box-shadow: 0 4px 12px rgba(255, 90, 80, 0.25) !important;
+    box-shadow: 0 4px 12px rgba(255, 107, 96, 0.3) !important;
     background-color: rgb(17, 24, 39) !important;
     color: rgb(243, 244, 246) !important;
     outline: none !important;

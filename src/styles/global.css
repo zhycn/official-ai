@@ -3,6 +3,15 @@
 /* Tailwind CSS 4.x: 配置 dark mode 使用 class 策略而不是媒体查询 */
 @custom-variant dark (&&:where(.dark, .dark *));
 
+/* ProductHunt 风格主题变量 */
+@theme {
+  --color-producthunt: #FF5A50;
+  --color-producthunt-hover: #E84A3F;
+  --color-producthunt-light: #FFF5F4;
+  --color-producthunt-dark: #FF6B60;
+  --color-producthunt-dark-hover: #FF8A80;
+}
+
 /* 全局优化样式 */
 :root {
   /* 平滑滚动 */
@@ -13,20 +22,20 @@
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
   
-  /* 选择文本颜色 */
-  --selection-bg: rgba(59, 130, 246, 0.2);
-  --selection-text: rgb(59, 130, 246);
+  /* ProductHunt 橙色选择文本颜色 */
+  --selection-bg: rgba(255, 90, 80, 0.2);
+  --selection-text: rgb(255, 90, 80);
 }
 
-/* 文本选择样式 */
+/* 文本选择样式 - ProductHunt 橙色 */
 ::selection {
   background-color: var(--selection-bg);
   color: var(--selection-text);
 }
 
 .dark ::selection {
-  background-color: rgba(96, 165, 250, 0.3);
-  color: rgb(147, 197, 253);
+  background-color: rgba(255, 107, 96, 0.3);
+  color: rgb(255, 138, 128);
 }
 
 /* 滚动条样式优化 */
@@ -61,15 +70,15 @@
   background-clip: padding-box;
 }
 
-/* 焦点样式优化 - 排除搜索框 */
+/* 焦点样式优化 - ProductHunt 橙色，排除搜索框 */
 *:focus-visible:not(.search-input) {
-  outline: 2px solid rgb(59, 130, 246);
+  outline: 2px solid #FF5A50;
   outline-offset: 2px;
   border-radius: 4px;
 }
 
 .dark *:focus-visible:not(.search-input) {
-  outline-color: rgb(96, 165, 250);
+  outline-color: #FF6B60;
 }
 
 /* 搜索框禁用默认焦点样式 */
@@ -91,18 +100,18 @@
   transition: none !important;
 }
 
-/* 搜索高亮样式 */
+/* 搜索高亮样式 - ProductHunt 橙色 */
 .highlight {
   font-weight: 600;
-  color: rgb(59, 130, 246);
-  background-color: rgba(59, 130, 246, 0.12);
+  color: #FF5A50;
+  background-color: rgba(255, 90, 80, 0.12);
   padding: 0 3px;
   border-radius: 3px;
 }
 
 .dark .highlight {
-  color: rgb(96, 165, 250);
-  background-color: rgba(96, 165, 250, 0.15);
+  color: #FF6B60;
+  background-color: rgba(255, 107, 96, 0.15);
 }
 
 /* 触摸优化 */
