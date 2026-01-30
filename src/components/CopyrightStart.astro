@@ -1,0 +1,13 @@
+---
+// 底部版权信息组件
+const year = new Date().getFullYear();
+const copyright = 'Official AI';
+---
+
+<ul class="flex items-center gap-3">
+    <li>
+        <span class="text-gray-500 dark:text-gray-400">©</span>
+        <span class="text-gray-500 dark:text-gray-400">{year}</span> 
+        <a href="/" class="text-gray-500 dark:text-gray-400 hover:text-[#FF5A50] dark:hover:text-[#FF5A50]">{copyright}</a>
+    </li>
+</ul>

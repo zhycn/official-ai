@@ -38,14 +38,7 @@ export interface Translations {
     prev: string;
     next: string;
   };
-  
-  // 底部
-  footer: {
-    version: string;
-    copyright: string;
-    builtBy: string;
-  };
-  
+
   // 工具卡片
   toolCard: {
     favorite: string;
@@ -87,11 +80,6 @@ export const translations: Record<Locale, Translations> = {
       prev: '上一页',
       next: '下一页',
     },
-    footer: {
-      version: 'online v0.1.0',
-      copyright: '© 2026 Official AI',
-      builtBy: 'Built by astro.build',
-    },
     toolCard: {
       favorite: '收藏',
     },
@@ -128,11 +116,6 @@ export const translations: Record<Locale, Translations> = {
       page: 'Page',
       prev: 'Previous',
       next: 'Next',
-    },
-    footer: {
-      version: 'online v0.1.0',
-      copyright: '© 2026 Official AI',
-      builtBy: 'Built by astro.build',
     },
     toolCard: {
       favorite: 'Favorite',
