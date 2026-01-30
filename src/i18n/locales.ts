@@ -51,6 +51,12 @@ export interface Translations {
     backHome: string;
     goBack: string;
   };
+  
+  // 空状态
+  emptyState: {
+    message: string;
+    description: string;
+  };
 }
 
 export const translations: Record<Locale, Translations> = {
@@ -89,6 +95,10 @@ export const translations: Record<Locale, Translations> = {
       backHome: '返回首页',
       goBack: '返回上一页',
     },
+    emptyState: {
+      message: '未找到相关工具',
+      description: '尝试调整搜索条件或浏览所有工具',
+    },
   },
   en: {
     nav: {
@@ -126,8 +136,15 @@ export const translations: Record<Locale, Translations> = {
       backHome: 'Back to Home',
       goBack: 'Go Back',
     },
+    emptyState: {
+      message: 'No tools found',
+      description: 'Try adjusting your search or browse all tools',
+    },
   },
 };
+
+// 导出翻译对象供客户端使用
+export const clientTranslations = translations;
 
 // 获取当前语言
 export function getLocale(): Locale {

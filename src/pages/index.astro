@@ -78,7 +78,11 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       next: '下一页',
       stats: '已收录',
       items: '项',
-      noResults: '未找到匹配的工具'
+      noResults: '未找到匹配的工具',
+      emptyState: {
+        message: '未找到相关工具',
+        description: '尝试调整搜索条件或浏览所有工具'
+      }
     },
     en: {
       page: 'Page',
@@ -86,7 +90,11 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       next: 'Next',
       stats: 'Collected',
       items: 'items',
-      noResults: 'No matching tools found'
+      noResults: 'No matching tools found',
+      emptyState: {
+        message: 'No tools found',
+        description: 'Try adjusting your search or browse all tools'
+      }
     }
   };
   
@@ -223,10 +231,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     // 如果工具列表为空，显示空状态并隐藏分页
     if (tools.length === 0) {
       const locale = getLocale();
-      const emptyMessage = locale === 'zh' ? '未找到相关工具' : 'No tools found';
-      const emptyDescription = locale === 'zh' 
-        ? '尝试调整搜索条件或浏览所有工具' 
-        : 'Try adjusting your search or browse all tools';
+      const emptyState = translations[locale]?.emptyState || translations.zh.emptyState;
       
       container.innerHTML = `
         <div class="col-span-full flex flex-col items-center justify-center py-16 px-4">
@@ -235,11 +240,11 @@ const initialTools = toolsData.slice(startIndex, endIndex);
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
-          <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            ${emptyMessage}
+          <h3 id="empty-state-message" class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            ${emptyState.message}
           </h3>
-          <p class="text-gray-500 dark:text-gray-400 text-center max-w-md">
-            ${emptyDescription}
+          <p id="empty-state-description" class="text-gray-500 dark:text-gray-400 text-center max-w-md">
+            ${emptyState.description}
           </p>
         </div>
       `;
@@ -675,6 +680,31 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       }
     });
   }
+
+  // 更新空状态文本（用于语言切换）
+  function updateEmptyStateText(locale) {
+    const messageEl = document.getElementById('empty-state-message');
+    const descEl = document.getElementById('empty-state-description');
+    
+    if (messageEl && descEl) {
+      const emptyState = translations[locale]?.emptyState || translations.zh.emptyState;
+      messageEl.textContent = emptyState.message;
+      descEl.textContent = emptyState.description;
+    }
+  }
+
+  // 监听语言变更事件
+  window.addEventListener('localechange', function(e) {
+    const locale = (e.detail && e.detail.locale) ? e.detail.locale : getLocale();
+    // 更新空状态文本
+    updateEmptyStateText(locale);
+    // 如果当前显示的是空状态，重新渲染以更新文本
+    const container = document.getElementById('tools-container');
+    if (container && filteredTools.length === 0) {
+      const isSearching = currentQuery !== '';
+      renderTools(filteredTools, currentPage, false, isSearching);
+    }
+  });
 
   // 初始化
   document.addEventListener('DOMContentLoaded', async () => {
