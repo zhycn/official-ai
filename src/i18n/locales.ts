@@ -49,6 +49,16 @@ export interface Translations {
     message: string;
     description: string;
   };
+  
+  // 语言切换
+  language: {
+    display: {
+      zh: string;
+      en: string;
+    };
+    toggle: string;
+    ariaLabel: string;
+  };
 }
 
 export const translations: Record<Locale, Translations> = {
@@ -83,9 +93,17 @@ export const translations: Record<Locale, Translations> = {
       message: '未找到相关工具',
       description: '尝试调整搜索条件或浏览所有工具',
     },
+    language: {
+      display: {
+        zh: 'CN',
+        en: 'EN',
+      },
+      toggle: '切换语言：中文 / English',
+      ariaLabel: '切换语言',
+    },
   },
   en: {
-    nav: { login: 'Login', submit: 'Submit Link' },
+    nav: { login: 'Login', submit: 'Submit' },
     search: {
       placeholder: 'Search Official AI tools...',
       noResults: 'No matching tools found',
@@ -114,6 +132,14 @@ export const translations: Record<Locale, Translations> = {
     emptyState: {
       message: 'No tools found',
       description: 'Try adjusting your search or browse all tools',
+    },
+    language: {
+      display: {
+        zh: 'CN',
+        en: 'EN',
+      },
+      toggle: 'Switch language: 中文 / English',
+      ariaLabel: 'Switch language',
     },
   },
 };

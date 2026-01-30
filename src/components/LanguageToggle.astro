@@ -1,5 +1,10 @@
 ---
 // 语言切换组件
+import { getLocaleFromRequest, t, clientTranslations } from '../i18n/locales';
+
+const locale = getLocaleFromRequest(Astro.request);
+const safeLocale: 'zh' | 'en' = locale === 'zh' || locale === 'en' ? locale : 'zh';
+const languageConfig = clientTranslations[safeLocale].language;
 ---
 
 <div class="relative">
@@ -7,25 +12,20 @@
     id="language-toggle"
     type="button"
     class="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 touch-manipulation flex items-center justify-center"
-    aria-label="切换语言"
-    title="切换语言：中文 / English"
+    aria-label={languageConfig.ariaLabel}
+    title={languageConfig.toggle}
   >
     <!-- 语言图标 -->
     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
     </svg>
     <!-- 语言文字（移动端隐藏） -->
-    <span id="language-display" class="ml-1.5 hidden sm:inline-block text-xs font-medium">ZH</span>
+    <span id="language-display" class="ml-1.5 hidden sm:inline-block text-xs font-medium">{languageConfig.display[safeLocale]}</span>
   </button>
 </div>
 
-<script is:inline>
+<script define:vars={{ clientTranslations }} is:inline>
   (function() {
-    const locales = {
-      zh: '中文',
-      en: 'EN'
-    };
-    
     // 获取当前语言
     function getLocale() {
       return localStorage.getItem('locale') || 'zh';
@@ -47,45 +47,17 @@
     
     // 更新页面文本
     function updatePageText(locale) {
-      const translations = {
-        zh: {
-          submit: '提交',
-          page: '页',
-          prev: '上一页',
-          next: '下一页',
-          stats: '已收录',
-          statsSearch: '找到',
-          items: '项',
-          title: 'Skills',
-          version: 'online v0.1.0',
-          copyright: '© 2025 skill0',
-          builtBy: 'Built by atypica.ai'
-        },
-        en: {
-          submit: 'Submit',
-          page: 'Page',
-          prev: 'Previous',
-          next: 'Next',
-          stats: 'Collected',
-          statsSearch: 'Found',
-          items: 'items',
-          title: 'Skills',
-          version: 'online v0.1.0',
-          copyright: '© 2025 skill0',
-          builtBy: 'Built by atypica.ai'
-        }
-      };
-      
-      const t = translations[locale] || translations.zh;
+      // @ts-ignore - locale is a valid key
+      const t = clientTranslations[locale] || clientTranslations['zh'];
       
       // 更新提交按钮
       const submitBtn = document.querySelector('[data-i18n="nav.submit"]');
-      if (submitBtn) submitBtn.textContent = t.submit;
+      if (submitBtn) submitBtn.textContent = t.nav.submit;
       
       // 更新标题（如果需要）
       const title = document.querySelector('h1');
-      if (title && title.textContent === 'Skills') {
-        title.textContent = t.title;
+      if (title && title.textContent === 'Official AI') {
+        title.textContent = t.page.title;
       }
       
       // 更新统计信息（检查是否在搜索状态）
@@ -94,8 +66,8 @@
         const totalCount = document.getElementById('total-count')?.textContent || '0';
         const searchInput = document.getElementById('search-input');
         const isSearching = searchInput && searchInput.value.trim() !== '';
-        const statsLabel = isSearching ? t.statsSearch : t.stats;
-        statsText.innerHTML = `${statsLabel} · <span id="total-count" class="font-semibold text-gray-900 dark:text-white">${totalCount}</span> ${t.items}`;
+        const statsLabel = isSearching ? t.page.statsSearch : t.page.stats;
+        statsText.innerHTML = `${statsLabel} · <span id="total-count" class="font-semibold text-gray-900 dark:text-white">${totalCount}</span> ${t.page.items}`;
       }
       
       // 更新分页文本
@@ -103,41 +75,50 @@
       if (pageInfo) {
         const match = pageInfo.textContent.match(/(\d+)\s*\/\s*(\d+)/);
         if (match) {
-          pageInfo.innerHTML = `${t.page} <span class="text-gray-900 dark:text-white">${match[1]}</span> / <span class="text-gray-900 dark:text-white">${match[2]}</span>`;
+          pageInfo.innerHTML = `${t.pagination.page} <span class="text-gray-900 dark:text-white">${match[1]}</span> / <span class="text-gray-900 dark:text-white">${match[2]}</span>`;
         }
       }
       
       const prevBtn = document.getElementById('prev-page');
-      if (prevBtn) prevBtn.textContent = t.prev;
+      if (prevBtn) {
+        const prevTextEl = prevBtn.querySelector('#prev-page-text');
+        if (prevTextEl) prevTextEl.textContent = t.pagination.prev;
+      }
       
       const nextBtn = document.getElementById('next-page');
-      if (nextBtn) nextBtn.textContent = t.next;
+      if (nextBtn) {
+        const nextTextEl = nextBtn.querySelector('#next-page-text');
+        if (nextTextEl) nextTextEl.textContent = t.pagination.next;
+      }
       
       // 更新搜索框占位符
       const searchInput = document.getElementById('search-input');
       if (searchInput) {
-        searchInput.placeholder = locale === 'zh' ? '搜索工具...' : 'Search tools...';
+        searchInput.placeholder = t.search.placeholder;
       }
       
       // 更新清除按钮
       const clearBtn = document.getElementById('search-clear');
       if (clearBtn) {
-        clearBtn.setAttribute('aria-label', locale === 'zh' ? '清除搜索' : 'Clear search');
+        clearBtn.setAttribute('aria-label', t.search.clear);
       }
     }
     
     // 更新语言显示
     function updateLanguageDisplay(locale) {
+      // @ts-ignore - locale is a valid key
+      const languageConfig = clientTranslations[locale]?.language || clientTranslations['zh'].language;
+      
       const display = document.getElementById('language-display');
       if (display) {
-        display.textContent = locale === 'zh' ? 'ZH' : 'EN';
+        display.textContent = languageConfig.display[locale] || languageConfig.display.zh;
       }
       
-      // 更新按钮的 title 属性
+      // 更新按钮的 title 和 aria-label 属性
       const button = document.getElementById('language-toggle');
       if (button) {
-        button.setAttribute('title', locale === 'zh' ? '切换语言：中文 / English' : 'Switch language: 中文 / English');
-        button.setAttribute('aria-label', locale === 'zh' ? '切换语言' : 'Switch language');
+        button.setAttribute('title', languageConfig.toggle);
+        button.setAttribute('aria-label', languageConfig.ariaLabel);
       }
     }
     
