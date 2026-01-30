@@ -31,7 +31,8 @@ const suggestionsListId = `${idPrefix}suggestions-list`;
     <!-- 搜索输入框 -->
     <input
       id={inputId}
-      type="text"
+      name="search"
+      type="search"
       placeholder={placeholder}
       autocomplete="off"
       class="search-input block w-full pl-12 pr-20 sm:pr-24 py-3 text-sm sm:text-base border-0 rounded-full bg-gray-100 dark:bg-gray-800/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:bg-white dark:focus:bg-gray-800 transition-all duration-200"
@@ -69,43 +70,60 @@ const suggestionsListId = `${idPrefix}suggestions-list`;
 </div>
 
 <style>
-  #search-suggestions {
+  #search-suggestions,
+  #mobile-search-suggestions {
     scrollbar-width: thin;
     scrollbar-color: rgba(156, 163, 175, 0.5) transparent;
   }
   
-  #search-suggestions::-webkit-scrollbar {
+  #search-suggestions::-webkit-scrollbar,
+  #mobile-search-suggestions::-webkit-scrollbar {
     width: 8px;
   }
   
-  #search-suggestions::-webkit-scrollbar-track {
+  #search-suggestions::-webkit-scrollbar-track,
+  #mobile-search-suggestions::-webkit-scrollbar-track {
     background: transparent;
   }
   
-  #search-suggestions::-webkit-scrollbar-thumb {
+  #search-suggestions::-webkit-scrollbar-thumb,
+  #mobile-search-suggestions::-webkit-scrollbar-thumb {
     background-color: rgba(156, 163, 175, 0.5);
     border-radius: 4px;
   }
   
+  #search-suggestions::-webkit-scrollbar-thumb:hover,
+  #mobile-search-suggestions::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(156, 163, 175, 0.7);
+  }
+  
   .suggestion-item {
-    transition: background-color 0.15s ease;
+    transition: all 0.15s ease;
     position: relative;
+    border-radius: 0.5rem;
+    margin: 0 0.5rem;
   }
   
   .suggestion-item:hover {
     background-color: rgba(255, 90, 80, 0.08);
+    transform: translateX(2px);
   }
   
   .dark .suggestion-item:hover {
     background-color: rgba(255, 107, 96, 0.12);
   }
   
-  .suggestion-item.active {
+  .suggestion-item.active,
+  .suggestion-item[aria-selected="true"] {
     background-color: rgba(255, 90, 80, 0.12);
+    outline: 2px solid rgba(255, 90, 80, 0.2);
+    outline-offset: -2px;
   }
   
-  .dark .suggestion-item.active {
+  .dark .suggestion-item.active,
+  .dark .suggestion-item[aria-selected="true"] {
     background-color: rgba(255, 107, 96, 0.18);
+    outline-color: rgba(255, 107, 96, 0.3);
   }
   
   /* 简化的搜索建议项布局 */

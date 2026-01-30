@@ -6,7 +6,7 @@ import Pagination from '../components/Pagination.astro';
 import Footer from '../components/Footer.astro';
 import toolsData from '../../public/data/tools.json';
 import { getLocaleFromRequest, t, clientTranslations } from '../i18n/locales';
-import { ITEMS_PER_PAGE } from '../utils/constants';
+import { ITEMS_PER_PAGE, SEARCH_DEBOUNCE_MS, FUSE_SEARCH_LIMIT, FUSE_SEARCH_THRESHOLD } from '../utils/constants';
 
 // 将翻译对象序列化为 JSON，以便在客户端使用
 const translationsJSON = JSON.stringify(clientTranslations);
@@ -400,64 +400,6 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       }
       return this.initPromise;
     }
-  }
-  
-  // 生成工具卡片 HTML
-  function generateToolCardHTML(tool, translations, locale) {
-    const t = translations[locale] || translations['zh'];
-    const openLinkLabel = t.toolCard.openLink || 'Open link';
-    
-    return `
-      <a
-        href="${escapeHtml(tool.url)}"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="group relative block p-5 sm:p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-[#FF5A50] dark:hover:border-[#FF6B60] hover:shadow-lg hover:shadow-[#FF5A50]/10 dark:hover:shadow-[#FF6B60]/20 transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.02] before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-[#FFF5F4]/0 before:via-[#FFF5F4]/0 before:to-[#FFF5F4]/0 hover:before:from-[#FFF5F4]/60 hover:before:via-[#FFF5F4]/30 hover:before:to-transparent dark:hover:before:from-[#FF5A50]/5 dark:hover:before:via-[#FF5A50]/3 dark:hover:before:to-transparent before:transition-all before:duration-300 before:-z-10"
-      >
-        <div class="relative z-10 flex items-start justify-between mb-3 sm:mb-4">
-          <div class="flex items-center gap-3 flex-1 min-w-0">
-            <span class="flex-shrink-0 w-2.5 h-2.5 bg-gradient-to-br from-[#FF5A50] via-[#FF6B60] to-[#FF5A50] rounded-full mt-1 shadow-sm shadow-[#FF5A50]/50 ring-1 ring-[#FF5A50]/20"></span>
-            <h3 class="font-semibold text-gray-900 dark:text-white truncate group-hover:text-[#FF5A50] dark:group-hover:text-[#FF6B60] transition-colors duration-300 text-base sm:text-lg leading-snug">
-              ${escapeHtml(tool.name)}
-            </h3>
-          </div>
-          <button
-            class="flex-shrink-0 p-1.5 sm:p-2 text-gray-400 dark:text-gray-500 hover:text-[#FF5A50] dark:hover:text-[#FF6B60] hover:bg-[#FFF5F4] dark:hover:bg-[#FF5A50]/10 rounded-lg transition-all duration-300 active:scale-95 touch-manipulation"
-            aria-label="${escapeHtml(openLinkLabel)}"
-            onclick="event.preventDefault(); event.stopPropagation(); window.open('${escapeHtml(tool.url)}', '_blank', 'noopener,noreferrer');"
-          >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-          </button>
-        </div>
-        <p class="relative z-10 text-sm sm:text-base text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed min-h-[3.25rem] sm:min-h-[3.5rem]">
-          ${escapeHtml(tool.description)}
-        </p>
-      </a>
-    `;
-  }
-  
-  // 生成空状态 HTML
-  function generateEmptyStateHTML(translations, locale) {
-    const t = translations[locale] || translations['zh'];
-    const emptyState = t.emptyState;
-    
-    return `
-      <div class="col-span-full flex flex-col items-center justify-center py-16 px-4">
-        <div class="w-24 h-24 mb-6 rounded-full bg-[#FFF5F4] dark:bg-[#FF5A50]/10 flex items-center justify-center">
-          <svg class="w-12 h-12 text-[#FF5A50] dark:text-[#FF6B60]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-          </svg>
-        </div>
-        <h3 id="empty-state-message" class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-          ${escapeHtml(emptyState.message)}
-        </h3>
-        <p id="empty-state-description" class="text-gray-500 dark:text-gray-400 text-center max-w-md">
-          ${escapeHtml(emptyState.description)}
-        </p>
-      </div>
-    `;
   }
   
   // ==================== 主逻辑 ====================
@@ -854,14 +796,26 @@ const initialTools = toolsData.slice(startIndex, endIndex);
 
   // 更新选中项样式
   function updateSelectedSuggestion() {
-    const items = document.querySelectorAll('.suggestion-item');
-    items.forEach((item, index) => {
-      if (index === selectedIndex) {
-        item.classList.add('active');
-        item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-      } else {
-        item.classList.remove('active');
-      }
+    // 同时处理桌面端和移动端
+    const desktopList = document.getElementById(DOM_IDS.SUGGESTIONS_LIST);
+    const mobileList = document.getElementById('mobile-suggestions-list');
+    const lists = [desktopList, mobileList].filter(Boolean);
+    
+    lists.forEach(list => {
+      if (!list) return;
+      const items = list.querySelectorAll('.suggestion-item');
+      items.forEach((item, index) => {
+        if (index === selectedIndex) {
+          item.classList.add('active');
+          item.setAttribute('aria-selected', 'true');
+          item.setAttribute('tabindex', '0');
+          item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        } else {
+          item.classList.remove('active');
+          item.setAttribute('aria-selected', 'false');
+          item.setAttribute('tabindex', '-1');
+        }
+      });
     });
   }
 
@@ -909,9 +863,13 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       }, SEARCH_DEBOUNCE_MS);
     });
 
-    // 键盘事件
-    searchInput.addEventListener('keydown', (e) => {
-      const suggestionsContainer = document.getElementById(DOM_IDS.SEARCH_SUGGESTIONS);
+    // 键盘事件处理函数（同时支持桌面端和移动端）
+    function handleSearchKeydown(e) {
+      // 检测当前是桌面端还是移动端搜索框
+      const isDesktop = e.target.id === DOM_IDS.SEARCH_INPUT;
+      const suggestionsContainer = isDesktop 
+        ? document.getElementById(DOM_IDS.SEARCH_SUGGESTIONS)
+        : document.getElementById('mobile-search-suggestions');
       const isVisible = suggestionsContainer && !suggestionsContainer.classList.contains('hidden');
 
       switch (e.key) {
@@ -947,7 +905,23 @@ const initialTools = toolsData.slice(startIndex, endIndex);
           }
           break;
       }
-    });
+    }
+
+    // 绑定键盘事件到当前搜索框
+    searchInput.addEventListener('keydown', handleSearchKeydown);
+    
+    // 同时绑定移动端搜索框的键盘事件（如果存在且不同）
+    const mobileSearchInput = document.getElementById('mobile-search-input');
+    if (mobileSearchInput && mobileSearchInput !== searchInput) {
+      mobileSearchInput.addEventListener('keydown', handleSearchKeydown);
+      
+      // 移动端搜索框的聚焦事件
+      mobileSearchInput.addEventListener('focus', async () => {
+        if (mobileSearchInput && mobileSearchInput.tagName === 'INPUT' && mobileSearchInput.value.trim()) {
+          await showSuggestions(mobileSearchInput.value);
+        }
+      });
+    }
 
     // 聚焦事件
     searchInput.addEventListener('focus', async () => {
@@ -955,6 +929,33 @@ const initialTools = toolsData.slice(startIndex, endIndex);
         await showSuggestions(searchInput.value);
       }
     });
+    
+    // 设置搜索建议点击事件委托（只绑定一次）
+    const desktopList = document.getElementById(DOM_IDS.SUGGESTIONS_LIST);
+    const mobileList = document.getElementById('mobile-suggestions-list');
+    
+    // 创建统一的事件处理函数
+    const handleSuggestionClick = (e) => {
+      const item = e.target.closest('.suggestion-item');
+      if (item) {
+        e.preventDefault();
+        e.stopPropagation();
+        const index = parseInt(item.getAttribute('data-index'), 10);
+        if (!isNaN(index)) {
+          selectSuggestion(index);
+        }
+      }
+    };
+    
+    // 绑定到桌面端和移动端列表（如果存在且未绑定）
+    if (desktopList && !desktopList._suggestionClickHandler) {
+      desktopList._suggestionClickHandler = handleSuggestionClick;
+      desktopList.addEventListener('click', handleSuggestionClick);
+    }
+    if (mobileList && !mobileList._suggestionClickHandler) {
+      mobileList._suggestionClickHandler = handleSuggestionClick;
+      mobileList.addEventListener('click', handleSuggestionClick);
+    }
     
     // 确保输入框可以正常使用
     logger.log('Search events bound successfully');
@@ -1046,7 +1047,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       }
     }
 
-    // 绑定搜索功能
+    // 绑定搜索功能（包含事件委托设置）
     bindSearchEvents();
 
     // 监听浏览器前进/后退事件
