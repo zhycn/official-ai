@@ -1,24 +1,18 @@
 ---
 // 顶部导航栏组件
+import Logo from './Logo.astro';
 import SearchBox from './SearchBox.astro';
 import GithubIcon from './GithubIcon.astro';
 import ThemeToggle from './ThemeToggle.astro';
 import LanguageToggle from './LanguageToggle.astro';
 import SubmitLinkButton from './SubmitLinkButton.astro';
-
 ---
 
 <nav class="sticky top-0 z-50 bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
     <div class="flex items-center justify-between h-20">
       <!-- Logo -->
-      <div class="shrink-0">
-        <a href="/" class="flex items-center gap-1.5 text-xl sm:text-2xl font-bold text-gray-900 dark:text-white transition-colors duration-200 hover:text-[#FF5A50] dark:hover:text-[#FF5A50]">
-          <span>Official</span>
-          <span class="text-[#FF5A50]">AI</span>
-          <span class="text-gray-400 dark:text-gray-500 text-lg font-normal">_</span>
-        </a>
-      </div>
+      <Logo />
 
       <!-- 搜索框 -->
       <div class="hidden md:block flex-1 max-w-2xl mx-8">

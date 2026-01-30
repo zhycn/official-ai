@@ -65,7 +65,7 @@ export const translations: Record<Locale, Translations> = {
   zh: {
     nav: { login: '登录', submit: '提交链接' },
     search: {
-      placeholder: '搜索官方AI工具...',
+      placeholder: '搜索 AI 工具...',
       noResults: '未找到匹配的工具',
       clear: '清除搜索',
     },
@@ -76,7 +76,7 @@ export const translations: Record<Locale, Translations> = {
       toggle: '点击切换主题：亮色 / 暗色 / 自动',
     },
     page: {
-      title: 'Official AI',
+      title: 'AI Tools',
       stats: '已收录',
       statsSearch: '搜索结果',
       items: '项',
@@ -105,7 +105,7 @@ export const translations: Record<Locale, Translations> = {
   en: {
     nav: { login: 'Login', submit: 'Submit' },
     search: {
-      placeholder: 'Search Official AI tools...',
+      placeholder: 'Search AI tools...',
       noResults: 'No matching tools found',
       clear: 'Clear search',
     },
@@ -116,8 +116,8 @@ export const translations: Record<Locale, Translations> = {
       toggle: 'Click to toggle theme: Light / Dark / Auto',
     },
     page: {
-      title: 'Official AI',
-      stats: 'Browse the official AI tools directory',
+      title: 'AI Tools',
+      stats: 'Collected',
       statsSearch: 'Search for',
       items: 'items',
     },
