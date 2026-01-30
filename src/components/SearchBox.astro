@@ -2,11 +2,24 @@
 // Google风格的搜索框组件
 import { getLocaleFromRequest, t } from '../i18n/locales';
 
+interface Props {
+  variant?: 'desktop' | 'mobile';
+}
+
+const { variant = 'desktop' } = Astro.props;
 const locale = getLocaleFromRequest(Astro.request);
 const placeholder = t('search.placeholder', locale);
+
+// 根据 variant 生成唯一的 ID
+const idPrefix = variant === 'mobile' ? 'mobile-' : '';
+const containerId = `${idPrefix}search-container`;
+const inputId = `${idPrefix}search-input`;
+const clearId = `${idPrefix}search-clear`;
+const suggestionsId = `${idPrefix}search-suggestions`;
+const suggestionsListId = `${idPrefix}suggestions-list`;
 ---
 
-<div class="relative w-full" id="search-container">
+<div class="relative w-full" id={containerId}>
   <div class="relative group">
     <!-- 搜索图标 -->
     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
@@ -17,7 +30,7 @@ const placeholder = t('search.placeholder', locale);
     
     <!-- 搜索输入框 -->
     <input
-      id="search-input"
+      id={inputId}
       type="text"
       placeholder={placeholder}
       autocomplete="off"
@@ -28,7 +41,7 @@ const placeholder = t('search.placeholder', locale);
     <div class="absolute inset-y-0 right-0 flex items-center pr-3 gap-1.5">
       <!-- 清除按钮 -->
       <button
-        id="search-clear"
+        id={clearId}
         type="button"
         class="hidden p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 rounded-full hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-200 active:scale-95 touch-manipulation"
         aria-label={locale === 'zh' ? '清除搜索' : 'Clear search'}
@@ -45,11 +58,11 @@ const placeholder = t('search.placeholder', locale);
   
   <!-- 搜索建议下拉框 -->
   <div
-    id="search-suggestions"
-    class="hidden absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl max-h-96 overflow-y-auto z-50"
+    id={suggestionsId}
+    class="hidden absolute top-full left-0 right-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl shadow-xl max-h-96 overflow-y-auto z-[60]"
     style="box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);"
   >
-    <div id="suggestions-list" class="py-1">
+    <div id={suggestionsListId} class="py-1">
       <!-- 建议项将动态插入这里 -->
     </div>
   </div>

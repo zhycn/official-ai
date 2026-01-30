@@ -1,6 +1,6 @@
 ---
 // 语言切换组件
-import { getLocaleFromRequest, t, clientTranslations } from '../i18n/locales';
+import { getLocaleFromRequest, getAstroRequest, clientTranslations } from '../i18n/locales';
 
 const locale = getLocaleFromRequest(Astro.request);
 const safeLocale: 'zh' | 'en' = locale === 'zh' || locale === 'en' ? locale : 'zh';
@@ -24,76 +24,57 @@ const languageConfig = clientTranslations[safeLocale].language;
   </button>
 </div>
 
-<script define:vars={{ clientTranslations }} is:inline>
-  (function() {
-    // 获取当前语言
-    function getLocale() {
-      return localStorage.getItem('locale') || 'zh';
+<script define:vars={{ clientTranslations }}>
+  // ==================== 工具函数内联 ====================
+  
+  // 获取当前语言（客户端）
+  function getClientLocale() {
+    try {
+      const saved = localStorage.getItem('locale');
+      if (saved === 'zh' || saved === 'en') {
+        return saved;
+      }
+      const browserLang = navigator.language || navigator.userLanguage;
+      if (browserLang.startsWith('zh')) return 'zh';
+      if (browserLang.startsWith('en')) return 'en';
+    } catch (e) {
+      // localStorage 不可用时使用默认值
     }
-    
-    // 设置语言
-    function setLocale(locale) {
+    return 'zh';
+  }
+  
+  // 设置语言（客户端）
+  function setClientLocale(locale) {
+    try {
       localStorage.setItem('locale', locale);
-      updateLanguageDisplay(locale);
-      
-      // 触发语言变更事件
       window.dispatchEvent(new CustomEvent('localechange', { 
-        detail: { locale: locale } 
+        detail: { locale } 
       }));
-      
-      // 更新页面文本（不刷新页面）
-      updatePageText(locale);
+    } catch (e) {
+      // localStorage 不可用时忽略
+    }
+  }
+  
+  // HTML 转义函数
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+  
+  // 国际化更新器类
+  class I18nUpdater {
+    constructor(translations) {
+      this.translations = translations;
     }
     
-    // 更新页面文本
-    function updatePageText(locale) {
-      // @ts-ignore - locale is a valid key
-      const t = clientTranslations[locale] || clientTranslations['zh'];
-      
-      // 更新提交按钮
-      const submitBtn = document.querySelector('[data-i18n="nav.submit"]');
-      if (submitBtn) submitBtn.textContent = t.nav.submit;
-      
-      // 更新标题（如果需要）
-      const title = document.querySelector('h1');
-      if (title && title.textContent === 'Official AI') {
-        title.textContent = t.page.title;
-      }
-      
-      // 更新统计信息（检查是否在搜索状态）
-      const statsText = document.getElementById('stats-text');
-      if (statsText) {
-        const totalCount = document.getElementById('total-count')?.textContent || '0';
-        const searchInput = document.getElementById('search-input');
-        const isSearching = searchInput && searchInput.value.trim() !== '';
-        const statsLabel = isSearching ? t.page.statsSearch : t.page.stats;
-        statsText.innerHTML = `${statsLabel} · <span id="total-count" class="font-semibold text-gray-900 dark:text-white">${totalCount}</span> ${t.page.items}`;
-      }
-      
-      // 更新分页文本
-      const pageInfo = document.querySelector('#pagination-container .text-sm');
-      if (pageInfo) {
-        const match = pageInfo.textContent.match(/(\d+)\s*\/\s*(\d+)/);
-        if (match) {
-          pageInfo.innerHTML = `${t.pagination.page} <span class="text-gray-900 dark:text-white">${match[1]}</span> / <span class="text-gray-900 dark:text-white">${match[2]}</span>`;
-        }
-      }
-      
-      const prevBtn = document.getElementById('prev-page');
-      if (prevBtn) {
-        const prevTextEl = prevBtn.querySelector('#prev-page-text');
-        if (prevTextEl) prevTextEl.textContent = t.pagination.prev;
-      }
-      
-      const nextBtn = document.getElementById('next-page');
-      if (nextBtn) {
-        const nextTextEl = nextBtn.querySelector('#next-page-text');
-        if (nextTextEl) nextTextEl.textContent = t.pagination.next;
-      }
+    updateAll(locale) {
+      const t = this.translations[locale] || this.translations['zh'];
       
       // 更新搜索框占位符
       const searchInput = document.getElementById('search-input');
-      if (searchInput) {
+      if (searchInput && searchInput.tagName === 'INPUT') {
         searchInput.placeholder = t.search.placeholder;
       }
       
@@ -102,60 +83,129 @@ const languageConfig = clientTranslations[safeLocale].language;
       if (clearBtn) {
         clearBtn.setAttribute('aria-label', t.search.clear);
       }
+      
+      // 更新统计信息
+      this.updateStats(locale);
+      
+      // 更新分页文本
+      this.updatePagination(locale);
+      
+      // 更新空状态文本
+      this.updateEmptyState(locale);
+      
+      // 更新提交按钮
+      const submitBtn = document.querySelector('[data-i18n="nav.submit"]');
+      if (submitBtn) {
+        submitBtn.textContent = t.nav.submit;
+      }
     }
     
-    // 更新语言显示
-    function updateLanguageDisplay(locale) {
-      // @ts-ignore - locale is a valid key
-      const languageConfig = clientTranslations[locale]?.language || clientTranslations['zh'].language;
+    updateStats(locale, total, isSearching = false) {
+      const statsText = document.getElementById('stats-text');
+      if (!statsText) return;
+      
+      const t = this.translations[locale] || this.translations['zh'];
+      const statsLabel = isSearching ? t.page.statsSearch : t.page.stats;
+      const totalCount = total !== undefined ? String(total) : (document.getElementById('total-count')?.textContent || '0');
+      
+      statsText.innerHTML = `<span class="inline-flex items-center gap-2">
+        <span class="px-2.5 py-1 rounded-md bg-[#FFF5F4] dark:bg-[#FF5A50]/10 text-sm font-medium text-[#FF5A50] dark:text-[#FF6B60]">${escapeHtml(statsLabel)}</span>
+        <span id="total-count" class="font-semibold text-gray-900 dark:text-white">${escapeHtml(totalCount)}</span>
+        <span>${escapeHtml(t.page.items)}</span>
+      </span>`;
+    }
+    
+    updatePagination(locale) {
+      const t = this.translations[locale] || this.translations['zh'];
+      
+      const pageInfo = document.getElementById('pagination-page-info');
+      if (pageInfo) {
+        const match = pageInfo.textContent?.match(/(\d+)\s*\/\s*(\d+)/);
+        if (match) {
+          pageInfo.innerHTML = `${escapeHtml(t.pagination.page)} <span class="font-semibold text-gray-900 dark:text-white">${match[1]}</span> / <span class="font-semibold text-gray-900 dark:text-white">${match[2]}</span>`;
+        }
+      }
+      
+      const prevText = document.getElementById('prev-page-text');
+      if (prevText) {
+        prevText.textContent = t.pagination.prev;
+      }
+      
+      const nextText = document.getElementById('next-page-text');
+      if (nextText) {
+        nextText.textContent = t.pagination.next;
+      }
+    }
+    
+    updateEmptyState(locale) {
+      const messageEl = document.getElementById('empty-state-message');
+      const descEl = document.getElementById('empty-state-description');
+      
+      if (messageEl && descEl) {
+        const t = this.translations[locale] || this.translations['zh'];
+        messageEl.textContent = t.emptyState.message;
+        descEl.textContent = t.emptyState.description;
+      }
+    }
+    
+    updateLanguageDisplay(locale) {
+      const t = this.translations[locale] || this.translations['zh'];
+      const languageConfig = t.language;
       
       const display = document.getElementById('language-display');
       if (display) {
         display.textContent = languageConfig.display[locale] || languageConfig.display.zh;
       }
       
-      // 更新按钮的 title 和 aria-label 属性
       const button = document.getElementById('language-toggle');
       if (button) {
         button.setAttribute('title', languageConfig.toggle);
         button.setAttribute('aria-label', languageConfig.ariaLabel);
       }
     }
+  }
+  
+  // ==================== 主逻辑 ====================
+  
+  const translations = clientTranslations;
+  const i18nUpdater = new I18nUpdater(translations);
+  
+  // 切换语言
+  function toggleLanguage() {
+    const currentLocale = getClientLocale();
+    const nextLocale = currentLocale === 'zh' ? 'en' : 'zh';
+    setClientLocale(nextLocale);
+    i18nUpdater.updateLanguageDisplay(nextLocale);
+    i18nUpdater.updateAll(nextLocale);
+  }
+  
+  // 初始化
+  function initLanguageToggle() {
+    const languageToggle = document.getElementById('language-toggle');
     
-    // 切换语言
-    function toggleLanguage() {
-      const currentLocale = getLocale();
-      const nextLocale = currentLocale === 'zh' ? 'en' : 'zh';
-      setLocale(nextLocale);
+    if (!languageToggle) {
+      setTimeout(initLanguageToggle, 100);
+      return;
     }
     
-    // 初始化
-    function initLanguageToggle() {
-      const languageToggle = document.getElementById('language-toggle');
-      
-      if (!languageToggle) {
-        setTimeout(initLanguageToggle, 100);
-        return;
-      }
-      
-      // 显示当前语言
-      updateLanguageDisplay(getLocale());
-      
-      // 绑定点击事件
-      languageToggle.addEventListener('click', function(e) {
-        e.preventDefault();
-        e.stopPropagation();
-        toggleLanguage();
-      });
-    }
+    // 显示当前语言
+    const locale = getClientLocale();
+    i18nUpdater.updateLanguageDisplay(locale);
     
-    // 确保在 DOM 加载后执行
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', function() {
-        setTimeout(initLanguageToggle, 50);
-      });
-    } else {
+    // 绑定点击事件
+    languageToggle.addEventListener('click', function(e) {
+      e.preventDefault();
+      e.stopPropagation();
+      toggleLanguage();
+    });
+  }
+  
+  // 确保在 DOM 加载后执行
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
       setTimeout(initLanguageToggle, 50);
-    }
-  })();
+    });
+  } else {
+    setTimeout(initLanguageToggle, 50);
+  }
 </script>

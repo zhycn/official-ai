@@ -153,51 +153,61 @@ export const clientTranslations = translations;
 // ========================
 // 从请求中安全获取语言偏好（服务端使用）
 // ========================
-export function getLocaleFromRequest(request: Request): Locale {
-  // 1. 优先从 Cookie 获取（需解码并验证）
-  const cookieHeader = request.headers.get('cookie');
-  if (cookieHeader) {
-    try {
-      const cookies = cookieHeader
-        .split(';')
-        .map((c) => c.trim())
-        .reduce((acc, cookie) => {
-          const [key, value] = cookie.split('=');
-          if (key && value) {
-            acc[decodeURIComponent(key)] = decodeURIComponent(value);
-          }
-          return acc;
-        }, {} as Record<string, string>);
-
-      const locale = cookies['locale'];
-      if (locale === 'zh' || locale === 'en') {
-        return locale;
-      }
-    } catch (e) {
-      // 忽略 Cookie 解析错误，降级到 Accept-Language
-    }
+export function getLocaleFromRequest(request: Request | undefined): Locale {
+  // 预渲染模式下，request 可能不存在或 headers 不可用
+  if (!request || !request.headers) {
+    return 'zh'; // 默认中文
   }
 
-  // 2. 从 Accept-Language 请求头解析（支持 zh-CN, en-US 等）
-  const acceptLanguage = request.headers.get('accept-language');
-  if (acceptLanguage) {
-    // 按权重排序（如: "zh-CN,zh;q=0.9,en;q=0.8"）
-    const languages = acceptLanguage
-      .split(',')
-      .map((lang) => {
-        const [code, q] = lang.trim().split(';q=');
-        return {
-          code: code.toLowerCase(),
-          weight: q ? parseFloat(q) : 1.0,
-        };
-      })
-      .sort((a, b) => b.weight - a.weight);
+  try {
+    // 1. 优先从 Cookie 获取（需解码并验证）
+    const cookieHeader = request.headers.get('cookie');
+    if (cookieHeader) {
+      try {
+        const cookies = cookieHeader
+          .split(';')
+          .map((c) => c.trim())
+          .reduce((acc, cookie) => {
+            const [key, value] = cookie.split('=');
+            if (key && value) {
+              acc[decodeURIComponent(key)] = decodeURIComponent(value);
+            }
+            return acc;
+          }, {} as Record<string, string>);
 
-    for (const { code } of languages) {
-      // 匹配主语言（如 zh-CN → zh）
-      if (code.startsWith('zh')) return 'zh';
-      if (code.startsWith('en')) return 'en';
+        const locale = cookies['locale'];
+        if (locale === 'zh' || locale === 'en') {
+          return locale;
+        }
+      } catch (e) {
+        // 忽略 Cookie 解析错误，降级到 Accept-Language
+      }
     }
+
+    // 2. 从 Accept-Language 请求头解析（支持 zh-CN, en-US 等）
+    const acceptLanguage = request.headers.get('accept-language');
+    if (acceptLanguage) {
+      // 按权重排序（如: "zh-CN,zh;q=0.9,en;q=0.8"）
+      const languages = acceptLanguage
+        .split(',')
+        .map((lang) => {
+          const [code, q] = lang.trim().split(';q=');
+          return {
+            code: code.toLowerCase(),
+            weight: q ? parseFloat(q) : 1.0,
+          };
+        })
+        .sort((a, b) => b.weight - a.weight);
+
+      for (const { code } of languages) {
+        // 匹配主语言（如 zh-CN → zh）
+        if (code.startsWith('zh')) return 'zh';
+        if (code.startsWith('en')) return 'en';
+      }
+    }
+  } catch (e) {
+    // 如果访问 headers 失败（预渲染模式），返回默认值
+    return 'zh';
   }
 
   // 3. 默认中文

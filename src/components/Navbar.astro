@@ -16,7 +16,7 @@ import SubmitLinkButton from './SubmitLinkButton.astro';
 
       <!-- 搜索框 -->
       <div class="hidden md:block flex-1 max-w-2xl mx-8">
-        <SearchBox />
+        <SearchBox variant="desktop" />
       </div>
 
       <!-- 右侧功能区 -->
@@ -57,7 +57,7 @@ import SubmitLinkButton from './SubmitLinkButton.astro';
     if (mobileSearchToggle && mobileSearchContainer) {
       mobileSearchToggle.addEventListener('click', function() {
         mobileSearchContainer.classList.toggle('hidden');
-        const searchInput = document.getElementById('search-input');
+        const searchInput = document.getElementById('mobile-search-input');
         if (searchInput && !mobileSearchContainer.classList.contains('hidden')) {
           setTimeout(() => searchInput.focus(), 100);
         }

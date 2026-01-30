@@ -44,7 +44,7 @@
       try {
         localStorage.setItem('theme', theme);
       } catch (e) {
-        console.warn('Failed to save theme:', e);
+        // localStorage 不可用时静默失败
       }
     }
     
@@ -113,7 +113,7 @@
           detail: { theme: nextTheme } 
         }));
       } catch (e) {
-        console.warn('Failed to dispatch themechange event:', e);
+        // 事件派发失败时静默失败
       }
     }
     
