@@ -1,5 +1,5 @@
 ---
-import { getLocale, t } from '../i18n/locales';
+import { getLocaleFromRequest, t, clientTranslations } from '../i18n/locales';
 
 interface Props {
   currentPage: number;
@@ -7,27 +7,63 @@ interface Props {
 }
 
 const { currentPage, totalPages } = Astro.props;
-const locale = getLocale();
+const locale = getLocaleFromRequest(Astro.request);
 ---
 
 <div class="flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0 mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-gray-200/60 dark:border-gray-800/60">
-  <div class="text-sm sm:text-base font-medium text-gray-600 dark:text-gray-400">
+  <div id="pagination-page-info" class="text-sm sm:text-base font-medium text-gray-600 dark:text-gray-400">
     {t('pagination.page', locale)} <span class="font-semibold text-gray-900 dark:text-white">{currentPage}</span> / <span class="font-semibold text-gray-900 dark:text-white">{totalPages}</span>
   </div>
   <div class="flex gap-3">
     <button
       id="prev-page"
       disabled={currentPage === 1}
-      class="px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-300/60 dark:border-gray-700/60 rounded-xl hover:bg-gray-50/80 dark:hover:bg-gray-700/80 hover:border-gray-400 dark:hover:border-gray-600 hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white/80 disabled:hover:border-gray-300/60 dark:disabled:hover:bg-gray-800/80 dark:disabled:hover:border-gray-700/60 transition-all duration-300 hover:scale-105 active:scale-95 touch-manipulation"
+      class="inline-flex items-center justify-center px-4 py-2 sm:px-5 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-[#FFF5F4] dark:hover:bg-[#FF5A50]/10 hover:border-[#FF5A50] dark:hover:border-[#FF6B60] hover:text-[#FF5A50] dark:hover:text-[#FF6B60] transition-all duration-200 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 disabled:hover:text-gray-700 disabled:hover:shadow-none dark:disabled:hover:bg-gray-800 dark:disabled:hover:border-gray-700 dark:disabled:hover:text-gray-300 touch-manipulation"
     >
-      {t('pagination.prev', locale)}
+      <span id="prev-page-text">{t('pagination.prev', locale)}</span>
     </button>
     <button
       id="next-page"
       disabled={currentPage === totalPages}
-      class="px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-300/60 dark:border-gray-700/60 rounded-xl hover:bg-gray-50/80 dark:hover:bg-gray-700/80 hover:border-gray-400 dark:hover:border-gray-600 hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white/80 disabled:hover:border-gray-300/60 dark:disabled:hover:bg-gray-800/80 dark:disabled:hover:border-gray-700/60 transition-all duration-300 hover:scale-105 active:scale-95 touch-manipulation"
+      class="inline-flex items-center justify-center px-4 py-2 sm:px-5 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-[#FFF5F4] dark:hover:bg-[#FF5A50]/10 hover:border-[#FF5A50] dark:hover:border-[#FF6B60] hover:text-[#FF5A50] dark:hover:text-[#FF6B60] transition-all duration-200 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 disabled:hover:text-gray-700 disabled:hover:shadow-none dark:disabled:hover:bg-gray-800 dark:disabled:hover:border-gray-700 dark:disabled:hover:text-gray-300 touch-manipulation"
     >
-      {t('pagination.next', locale)}
+      <span id="next-page-text">{t('pagination.next', locale)}</span>
     </button>
   </div>
 </div>
+
+<script define:vars={{ clientTranslations }}>
+  // 获取当前语言
+  function getLocale() {
+    return localStorage.getItem('locale') || 'zh';
+  }
+  
+  // 更新分页文本
+  function updatePaginationText(locale) {
+    const pagination = clientTranslations[locale]?.pagination || clientTranslations['zh'].pagination;
+    
+    const pageInfoEl = document.getElementById('pagination-page-info');
+    const prevTextEl = document.getElementById('prev-page-text');
+    const nextTextEl = document.getElementById('next-page-text');
+    
+    if (pageInfoEl) {
+      const currentPage = pageInfoEl.querySelector('span:first-of-type')?.textContent || '1';
+      const totalPages = pageInfoEl.querySelector('span:last-of-type')?.textContent || '1';
+      pageInfoEl.innerHTML = `${pagination.page} <span class="font-semibold text-gray-900 dark:text-white">${currentPage}</span> / <span class="font-semibold text-gray-900 dark:text-white">${totalPages}</span>`;
+    }
+    
+    if (prevTextEl) prevTextEl.textContent = pagination.prev;
+    if (nextTextEl) nextTextEl.textContent = pagination.next;
+  }
+  
+  // 监听语言变更事件
+  window.addEventListener('localechange', function(e) {
+    const locale = (e.detail && e.detail.locale) ? e.detail.locale : getLocale();
+    updatePaginationText(locale);
+  });
+  
+  // 初始化时更新文本（处理客户端渲染）
+  if (typeof window !== 'undefined') {
+    updatePaginationText(getLocale());
+  }
+</script>

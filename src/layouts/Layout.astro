@@ -1,22 +1,146 @@
 ---
 // src/layouts/Layout.astro
 import "../styles/global.css";
-import { getLocale } from '../i18n/locales';
+import { getLocaleFromRequest, t } from '../i18n/locales';
 
-const { title = "DevLink Hub" } = Astro.props;
-const locale = getLocale();
+interface Props {
+  title?: string;
+  description?: string;
+  image?: string;
+  type?: string;
+}
+
+const { 
+  title = "Official AI - Go official. Skip the noise.",
+  description,
+  image = "/logo.png",
+  type = "website"
+} = Astro.props;
+
+const locale = getLocaleFromRequest(Astro.request);
 const htmlLang = locale === 'zh' ? 'zh-CN' : 'en';
+
+// 默认描述（根据语言）
+const defaultDescription = locale === 'zh' 
+  ? 'Official AI - 一个只收录 AI 工具官方链接的纯净导航站。无广告，无仿冒站，一键直达真源。'
+  : 'Official AI - A clean, ad-free directory of official AI tool links. No fake sites. One click to the real source.';
+
+const metaDescription = description || defaultDescription;
+
+// 构建完整的 URL
+const siteUrl = Astro.site?.href || 'https://officialai.dev';
+const canonicalUrl = new URL(Astro.url.pathname, siteUrl).href;
+const ogImageUrl = image.startsWith('http') ? image : new URL(image, siteUrl).href;
+
+// 构建多语言 hreflang URLs（使用相同的 URL，因为语言通过 cookie 控制）
+const zhUrl = canonicalUrl;
+const enUrl = canonicalUrl;
 ---
 
 <!DOCTYPE html>
 <html lang={htmlLang}>
   <head>
+    {/* 基础 Meta 标签 */}
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    
+    {/* 基础 SEO Meta 标签 */}
     <title>{title}</title>
+    <meta name="description" content={metaDescription} />
+    <meta name="keywords" content={locale === 'zh' ? 'AI工具,官方链接,AI导航,人工智能工具,AI资源' : 'AI tools, official links, AI directory, artificial intelligence tools, AI resources'} />
+    <meta name="author" content="Official AI" />
+    <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
+    <meta name="googlebot" content="index, follow" />
+    <meta name="language" content={htmlLang} />
+    <meta name="revisit-after" content="7 days" />
+    
+    {/* Canonical URL - 避免重复内容 */}
+    <link rel="canonical" href={canonicalUrl} />
+    
+    {/* 多语言 hreflang 标签 - 帮助搜索引擎理解多语言版本 */}
+    <link rel="alternate" hreflang="zh-CN" href={zhUrl} />
+    <link rel="alternate" hreflang="en" href={enUrl} />
+    <link rel="alternate" hreflang="x-default" href={canonicalUrl} />
+    
+    {/* Open Graph 标签 - Facebook, LinkedIn 等社交媒体 */}
+    <meta property="og:type" content={type} />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={metaDescription} />
+    <meta property="og:image" content={ogImageUrl} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content={title} />
+    <meta property="og:url" content={canonicalUrl} />
+    <meta property="og:site_name" content="Official AI" />
+    <meta property="og:locale" content={locale === 'zh' ? 'zh_CN' : 'en_US'} />
+    <meta property="og:locale:alternate" content={locale === 'zh' ? 'en_US' : 'zh_CN'} />
+    
+    {/* Twitter Card 标签 */}
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={metaDescription} />
+    <meta name="twitter:image" content={ogImageUrl} />
+    <meta name="twitter:image:alt" content={title} />
+    <meta name="twitter:site" content="@officialai" />
+    <meta name="twitter:creator" content="@officialai" />
+    
+    {/* Favicon 和图标 */}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
-    <!-- 预加载 Fuse.js -->
+    <link rel="apple-touch-icon" href="/logo.png" />
+    <link rel="manifest" href="/manifest.json" />
+    
+    {/* DNS 预解析和预连接 - 性能优化 */}
+    <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin="anonymous" />
+    
+    {/* 预加载关键资源 */}
     <link rel="preload" href="https://cdn.jsdelivr.net/npm/fuse.js@7.1.0/dist/fuse.min.js" as="script" crossorigin="anonymous" />
+    
+    {/* 主题颜色 */}
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#111827" media="(prefers-color-scheme: dark)" />
+    
+    {/* 结构化数据 - JSON-LD Schema.org */}
+    <script type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "Official AI",
+      "alternateName": "OfficialAI",
+      "url": siteUrl,
+      "description": metaDescription,
+      "inLanguage": htmlLang,
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": {
+          "@type": "EntryPoint",
+          "urlTemplate": `${siteUrl}?q={search_term_string}`
+        },
+        "query-input": "required name=search_term_string"
+      },
+      "publisher": {
+        "@type": "Organization",
+        "name": "Official AI",
+        "url": siteUrl,
+        "logo": {
+          "@type": "ImageObject",
+          "url": ogImageUrl
+        }
+      }
+    })} />
+    
+    {/* 组织信息结构化数据 */}
+    <script type="application/ld+json" set:html={JSON.stringify({
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Official AI",
+      "url": siteUrl,
+      "logo": ogImageUrl,
+      "description": metaDescription,
+      "sameAs": [
+        "https://github.com/zhycn/official-ai"
+      ]
+    })} />
     <script is:inline>
       // 在页面加载前设置主题，避免闪烁
       (function() {

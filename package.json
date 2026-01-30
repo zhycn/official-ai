@@ -1,7 +1,26 @@
 {
   "name": "official-ai",
   "type": "module",
-  "version": "0.0.1",
+  "version": "0.1.0",
+  "description": "Official AI - A clean, ad-free directory of official AI tool links.",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/zhycn/official-ai.git"
+  },
+  "author": "zhycn",
+  "homepage": "https://github.com/zhycn/official-ai#readme",
+  "bugs": {
+    "url": "https://github.com/zhycn/official-ai/issues"
+  },
+  "keywords": [
+    "astro",
+    "tailwindcss",
+    "fusejs",
+    "open-source",
+    "official-ai",
+    "AI"
+  ],
   "scripts": {
     "dev": "astro dev",
     "build": "astro build",
@@ -13,5 +32,8 @@
     "astro": "^5.16.16",
     "fuse.js": "^7.1.0",
     "tailwindcss": "^4.1.18"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }

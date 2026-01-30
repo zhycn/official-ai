@@ -1,0 +1,43 @@
+---
+import { getLocaleFromRequest, t, clientTranslations } from '../i18n/locales';
+
+const locale = getLocaleFromRequest(Astro.request);
+const href = 'https://github.com/zhycn/official-ai/issues';
+---
+
+<a
+    href={href}
+    target="_blank"
+    rel="noopener noreferrer"
+    class="px-4 py-2.5 min-w-[100px] text-center text-sm font-medium text-white bg-[#FF5A50] hover:bg-[#E84A3F] dark:bg-[#FF5A50] dark:hover:bg-[#E84A3F] rounded-lg transition-colors duration-200 touch-manipulation shadow-sm hover:shadow-md"
+>
+    <span id="submit-link-text">{t('nav.submit', locale)}</span>
+</a>
+
+<script define:vars={{ clientTranslations }}>
+    // 获取当前语言
+    function getLocale() {
+      return localStorage.getItem('locale') || 'zh';
+    }
+    
+    // 更新提交链接文本
+    function updateSubmitLinkText(locale) {
+      const nav = clientTranslations[locale]?.nav || clientTranslations['zh'].nav;
+      
+      const submitLinkTextEl = document.getElementById('submit-link-text');
+
+      if (submitLinkTextEl) submitLinkTextEl.textContent = nav.submit;
+    }
+    
+    // 监听语言变更事件
+    window.addEventListener('localechange', function(e) {
+      const locale = (e.detail && e.detail.locale) ? e.detail.locale : getLocale();
+      updateSubmitLinkText(locale);
+    });
+    
+    // 初始化时更新文本（处理客户端渲染）
+    if (typeof window !== 'undefined') {
+      updateSubmitLinkText(getLocale());
+    }
+  </script>
+  

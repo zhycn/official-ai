@@ -1,24 +1,17 @@
 ---
 // 底部工具栏组件
-import { getLocale, t } from '../i18n/locales';
-
-const locale = getLocale();
+import CopyrightStart from './CopyrightStart.astro';
+import CopyrightEnd from './CopyrightEnd.astro';
 ---
 
-<footer class="mt-auto border-t border-gray-200/40 dark:border-gray-800/40 bg-white/60 dark:bg-gray-900/60 backdrop-blur-xl">
-  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+<footer class="mt-auto border-t border-gray-200/60 dark:border-gray-800/60 bg-white dark:bg-gray-900">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-6">
     <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
-      <div class="text-sm sm:text-base font-medium text-gray-500 dark:text-gray-400">
-        <span class="inline-flex items-center gap-2">
-          <span class="relative w-2 h-2">
-            <span class="absolute inset-0 bg-green-500 rounded-full animate-ping opacity-75"></span>
-            <span class="relative w-2 h-2 bg-green-500 rounded-full"></span>
-          </span>
-          {t('footer.version', locale)}
-        </span>
-      </div>
       <div class="text-sm sm:text-base text-gray-500 dark:text-gray-400">
-        {t('footer.copyright', locale)} | {t('footer.builtBy', locale)}
+        <CopyrightStart />
+      </div>
+      <div class="text-sm sm:text-base font-medium text-gray-500 dark:text-gray-400">
+        <CopyrightEnd />
       </div>
     </div>
   </div>

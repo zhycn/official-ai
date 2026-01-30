@@ -1,29 +1,26 @@
 ---
 // 空状态组件
-import { getLocale, t } from '../i18n/locales';
+import { getLocaleFromRequest, t } from '../i18n/locales';
 
-interface Props {
-  message?: string;
-  description?: string;
-}
-
-const locale = getLocale();
-const { 
-  message = locale === 'zh' ? '未找到相关工具' : 'No tools found',
-  description = locale === 'zh' ? '尝试调整搜索条件或浏览所有工具' : 'Try adjusting your search or browse all tools'
-} = Astro.props;
+const locale = getLocaleFromRequest(Astro.request);
 ---
 
-<div class="flex flex-col items-center justify-center py-16 px-4">
-  <div class="w-24 h-24 mb-6 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-    <svg class="w-12 h-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+<div class="flex flex-col items-center justify-center py-12 sm:py-16 px-4">
+  <div class="w-20 h-20 sm:w-24 sm:h-24 mb-6 sm:mb-8 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+    <svg class="w-10 h-10 sm:w-12 sm:h-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
     </svg>
   </div>
-  <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-    {message}
+  <h3 
+    id="empty-state-message"
+    class="text-2xl sm:text-3xl font-semibold text-gray-900 dark:text-white mb-3 sm:mb-4 tracking-tight"
+  >
+    {t('emptyState.message', locale)}
   </h3>
-  <p class="text-gray-500 dark:text-gray-400 text-center max-w-md">
-    {description}
+  <p 
+    id="empty-state-description"
+    class="text-base sm:text-lg text-gray-600 dark:text-gray-400 leading-relaxed max-w-md mx-auto text-center"
+  >
+    {t('emptyState.description', locale)}
   </p>
 </div>

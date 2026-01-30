@@ -5,10 +5,13 @@ import ToolCard from '../components/ToolCard.astro';
 import Pagination from '../components/Pagination.astro';
 import Footer from '../components/Footer.astro';
 import toolsData from '../../public/data/tools.json';
-import { getLocale, t } from '../i18n/locales';
+import { getLocaleFromRequest, t, clientTranslations } from '../i18n/locales';
+
+// 将翻译对象序列化为 JSON，以便在客户端使用
+const translationsJSON = JSON.stringify(clientTranslations);
 
 const ITEMS_PER_PAGE = 24;
-const locale = getLocale();
+const locale = getLocaleFromRequest(Astro.request);
 
 // 从 URL 读取页码（服务端）
 const urlPageParam = Astro.url.searchParams.get('page');
@@ -21,7 +24,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
 ---
 
 <Layout title="Skills - skill0">
-  <div class="min-h-screen flex flex-col bg-gradient-to-br from-gray-50 via-white to-gray-50/50 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950/50">
+  <div class="min-h-screen flex flex-col bg-white dark:bg-gray-900">
     <Navbar />
     
     <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 w-full">
@@ -31,11 +34,11 @@ const initialTools = toolsData.slice(startIndex, endIndex);
           {t('page.title', locale)}
         </h1>
         <p class="text-sm sm:text-base text-gray-500 dark:text-gray-400 mb-4 sm:mb-5 italic font-light">
-          Go official. Skip the noise.
+          {t('page.subtitle', locale)}
         </p>
         <p class="text-base sm:text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
           <span id="stats-text" class="inline-flex items-center gap-2">
-            <span class="px-2.5 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">
+            <span class="px-2.5 py-1 rounded-md bg-[#FFF5F4] dark:bg-[#FF5A50]/10 text-sm font-medium text-[#FF5A50] dark:text-[#FF6B60]">
               {t('page.stats', locale)}
             </span>
             <span id="total-count" class="font-semibold text-gray-900 dark:text-white">{toolsData.length}</span>
@@ -69,36 +72,29 @@ const initialTools = toolsData.slice(startIndex, endIndex);
   </div>
 </Layout>
 
-<script define:vars={{ toolsData, ITEMS_PER_PAGE }}>
-  // 国际化翻译
-  const translations = {
-    zh: {
-      page: '页',
-      prev: '上一页',
-      next: '下一页',
-      stats: '已收录',
-      items: '项',
-      noResults: '未找到匹配的工具'
-    },
-    en: {
-      page: 'Page',
-      prev: 'Previous',
-      next: 'Next',
-      stats: 'Collected',
-      items: 'items',
-      noResults: 'No matching tools found'
-    }
-  };
+<script define:vars={{ toolsData, ITEMS_PER_PAGE, translationsJSON }}>
+  // 使用从 locales.ts 导入的翻译
+  const translations = JSON.parse(translationsJSON);
   
   // 获取当前语言
   function getLocale() {
     return localStorage.getItem('locale') || 'zh';
   }
   
-  // 获取翻译
+  // 获取翻译（支持嵌套键，如 'page.stats'）
   function t(key) {
     const locale = getLocale();
-    return translations[locale]?.[key] || key;
+    const keys = key.split('.');
+    let value = translations[locale];
+    
+    for (const k of keys) {
+      if (value == null || typeof value !== 'object') {
+        return key;
+      }
+      value = value[k];
+    }
+    
+    return typeof value === 'string' ? value : key;
   }
   
   // 使用动态导入加载 Fuse.js
@@ -223,23 +219,20 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     // 如果工具列表为空，显示空状态并隐藏分页
     if (tools.length === 0) {
       const locale = getLocale();
-      const emptyMessage = locale === 'zh' ? '未找到相关工具' : 'No tools found';
-      const emptyDescription = locale === 'zh' 
-        ? '尝试调整搜索条件或浏览所有工具' 
-        : 'Try adjusting your search or browse all tools';
+      const emptyState = translations[locale]?.emptyState || translations.zh.emptyState;
       
       container.innerHTML = `
         <div class="col-span-full flex flex-col items-center justify-center py-16 px-4">
-          <div class="w-24 h-24 mb-6 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-            <svg class="w-12 h-12 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="w-24 h-24 mb-6 rounded-full bg-[#FFF5F4] dark:bg-[#FF5A50]/10 flex items-center justify-center">
+            <svg class="w-12 h-12 text-[#FF5A50] dark:text-[#FF6B60]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
-          <h3 class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            ${emptyMessage}
+          <h3 id="empty-state-message" class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            ${emptyState.message}
           </h3>
-          <p class="text-gray-500 dark:text-gray-400 text-center max-w-md">
-            ${emptyDescription}
+          <p id="empty-state-description" class="text-gray-500 dark:text-gray-400 text-center max-w-md">
+            ${emptyState.description}
           </p>
         </div>
       `;
@@ -270,26 +263,26 @@ const initialTools = toolsData.slice(startIndex, endIndex);
         href="${escapeHtml(tool.url)}"
         target="_blank"
         rel="noopener noreferrer"
-        class="group relative block p-5 sm:p-6 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl border border-gray-200/60 dark:border-gray-700/60 hover:border-blue-400/60 dark:hover:border-blue-500/40 hover:shadow-xl hover:shadow-blue-500/5 dark:hover:shadow-blue-500/10 transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.02] before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-blue-50/0 before:via-blue-50/0 before:to-blue-50/0 hover:before:from-blue-50/50 hover:before:via-blue-50/30 hover:before:to-transparent dark:hover:before:from-blue-950/20 dark:hover:before:via-blue-950/10 dark:hover:before:to-transparent before:transition-all before:duration-300 before:-z-10"
+        class="group relative block p-5 sm:p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-[#FF5A50] dark:hover:border-[#FF6B60] hover:shadow-lg hover:shadow-[#FF5A50]/10 dark:hover:shadow-[#FF6B60]/20 transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.02] before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-[#FFF5F4]/0 before:via-[#FFF5F4]/0 before:to-[#FFF5F4]/0 hover:before:from-[#FFF5F4]/60 hover:before:via-[#FFF5F4]/30 hover:before:to-transparent dark:hover:before:from-[#FF5A50]/5 dark:hover:before:via-[#FF5A50]/3 dark:hover:before:to-transparent before:transition-all before:duration-300 before:-z-10"
       >
         <div class="relative z-10 flex items-start justify-between mb-3 sm:mb-4">
           <div class="flex items-center gap-3 flex-1 min-w-0">
-            <span class="flex-shrink-0 w-2.5 h-2.5 bg-gradient-to-br from-emerald-400 via-green-500 to-emerald-600 rounded-full mt-1 shadow-sm shadow-green-500/50 ring-1 ring-green-500/20"></span>
-            <h3 class="font-semibold text-gray-900 dark:text-white truncate group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300 text-base sm:text-lg leading-snug">
+            <span class="flex-shrink-0 w-2.5 h-2.5 bg-gradient-to-br from-[#FF5A50] via-[#FF6B60] to-[#FF5A50] rounded-full mt-1 shadow-sm shadow-[#FF5A50]/50 ring-1 ring-[#FF5A50]/20"></span>
+            <h3 class="font-semibold text-gray-900 dark:text-white truncate group-hover:text-[#FF5A50] dark:group-hover:text-[#FF6B60] transition-colors duration-300 text-base sm:text-lg leading-snug">
               ${escapeHtml(tool.name)}
             </h3>
           </div>
           <button
-            class="flex-shrink-0 p-1.5 sm:p-2 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50/80 dark:hover:bg-red-900/20 rounded-lg transition-all duration-300 active:scale-95 touch-manipulation"
-            aria-label="${getLocale() === 'zh' ? '收藏' : 'Favorite'}"
-            onclick="event.preventDefault(); event.stopPropagation();"
+            class="flex-shrink-0 p-1.5 sm:p-2 text-gray-400 dark:text-gray-500 hover:text-[#FF5A50] dark:hover:text-[#FF6B60] hover:bg-[#FFF5F4] dark:hover:bg-[#FF5A50]/10 rounded-lg transition-all duration-300 active:scale-95 touch-manipulation"
+            aria-label="${t('toolCard.openLink')}"
+            onclick="event.preventDefault(); event.stopPropagation(); window.open('${escapeHtml(tool.url)}', '_blank', 'noopener,noreferrer');"
           >
             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
             </svg>
           </button>
         </div>
-        <p class="relative z-10 text-sm sm:text-base text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed">
+        <p class="relative z-10 text-sm sm:text-base text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed min-h-[3.25rem] sm:min-h-[3.5rem]">
           ${escapeHtml(tool.description)}
         </p>
       </a>
@@ -339,13 +332,13 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     if (statsText) {
       const locale = getLocale();
       const statsLabel = isSearching 
-        ? (locale === 'zh' ? '找到' : 'Found')
-        : (locale === 'zh' ? '已收录' : 'Collected');
+        ? t('page.statsSearch')
+        : t('page.stats');
       
       statsText.innerHTML = `<span class="inline-flex items-center gap-2">
-        <span class="px-2.5 py-1 rounded-md bg-gray-100 dark:bg-gray-800 text-sm font-medium text-gray-700 dark:text-gray-300 border border-gray-200 dark:border-gray-700">${statsLabel}</span>
+        <span class="px-2.5 py-1 rounded-md bg-[#FFF5F4] dark:bg-[#FF5A50]/10 text-sm font-medium text-[#FF5A50] dark:text-[#FF6B60]">${statsLabel}</span>
         <span id="total-count" class="font-semibold text-gray-900 dark:text-white">${total}</span>
-        <span>${t('items')}</span>
+        <span>${t('page.items')}</span>
       </span>`;
     }
   }
@@ -376,22 +369,33 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     buttonContainer.className = 'flex gap-3';
     
     const pageInfo = document.createElement('div');
+    pageInfo.id = 'pagination-page-info';
     pageInfo.className = 'text-sm sm:text-base font-medium text-gray-600 dark:text-gray-400';
-    pageInfo.innerHTML = `${t('page')} <span class="font-semibold text-gray-900 dark:text-white">${page}</span> / <span class="font-semibold text-gray-900 dark:text-white">${totalPages}</span>`;
+    pageInfo.innerHTML = `${t('pagination.page')} <span class="font-semibold text-gray-900 dark:text-white">${page}</span> / <span class="font-semibold text-gray-900 dark:text-white">${totalPages}</span>`;
     
     // 创建上一页按钮
     const prevBtn = document.createElement('button');
     prevBtn.id = 'prev-page';
-    prevBtn.className = 'px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-300/60 dark:border-gray-700/60 rounded-xl hover:bg-gray-50/80 dark:hover:bg-gray-700/80 hover:border-gray-400 dark:hover:border-gray-600 hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white/80 disabled:hover:border-gray-300/60 dark:disabled:hover:bg-gray-800/80 dark:disabled:hover:border-gray-700/60 transition-all duration-300 hover:scale-105 active:scale-95 touch-manipulation';
-    prevBtn.textContent = '上一页';
+    prevBtn.className = 'inline-flex items-center justify-center px-4 py-2 sm:px-5 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-[#FFF5F4] dark:hover:bg-[#FF5A50]/10 hover:border-[#FF5A50] dark:hover:border-[#FF6B60] hover:text-[#FF5A50] dark:hover:text-[#FF6B60] transition-all duration-200 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 disabled:hover:text-gray-700 disabled:hover:shadow-none dark:disabled:hover:bg-gray-800 dark:disabled:hover:border-gray-700 dark:disabled:hover:text-gray-300 touch-manipulation';
     prevBtn.disabled = page === 1;
+    
+    const prevText = document.createElement('span');
+    prevText.id = 'prev-page-text';
+    prevText.textContent = t('pagination.prev');
+    
+    prevBtn.appendChild(prevText);
     
     // 创建下一页按钮
     const nextBtn = document.createElement('button');
     nextBtn.id = 'next-page';
-    nextBtn.className = 'px-5 py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-gray-300/60 dark:border-gray-700/60 rounded-xl hover:bg-gray-50/80 dark:hover:bg-gray-700/80 hover:border-gray-400 dark:hover:border-gray-600 hover:shadow-md disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white/80 disabled:hover:border-gray-300/60 dark:disabled:hover:bg-gray-800/80 dark:disabled:hover:border-gray-700/60 transition-all duration-300 hover:scale-105 active:scale-95 touch-manipulation';
-    nextBtn.textContent = '下一页';
+    nextBtn.className = 'inline-flex items-center justify-center px-4 py-2 sm:px-5 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-[#FFF5F4] dark:hover:bg-[#FF5A50]/10 hover:border-[#FF5A50] dark:hover:border-[#FF6B60] hover:text-[#FF5A50] dark:hover:text-[#FF6B60] transition-all duration-200 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 disabled:hover:text-gray-700 disabled:hover:shadow-none dark:disabled:hover:bg-gray-800 dark:disabled:hover:border-gray-700 dark:disabled:hover:text-gray-300 touch-manipulation';
     nextBtn.disabled = page === totalPages;
+    
+    const nextText = document.createElement('span');
+    nextText.id = 'next-page-text';
+    nextText.textContent = t('pagination.next');
+    
+    nextBtn.appendChild(nextText);
     
     // 绑定事件
     prevBtn.addEventListener('click', (e) => {
@@ -462,7 +466,8 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     // 搜索时重置到第一页并更新 URL
     currentPage = 1;
     updateURLParam('page', null);
-    renderTools(filteredTools, 1, false);
+    const isSearching = currentQuery !== '';
+    renderTools(filteredTools, 1, false, isSearching);
   }
 
   // 显示搜索建议
@@ -488,7 +493,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       if (suggestions.length === 0) {
         suggestionsList.innerHTML = `
           <div class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
-            ${t('noResults')}
+            ${t('search.noResults')}
           </div>
         `;
         suggestionsContainer.classList.remove('hidden');
@@ -497,19 +502,23 @@ const initialTools = toolsData.slice(startIndex, endIndex);
           .map(
             (tool, index) => `
           <div
-            class="suggestion-item px-4 py-3.5 cursor-pointer flex items-start gap-3"
+            class="suggestion-item px-3 py-2 cursor-pointer"
             data-index="${index}"
             data-name="${escapeHtml(tool.name)}"
           >
-            <svg class="w-5 h-5 text-gray-400 dark:text-gray-500 mt-0.5 flex-shrink-0 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-            </svg>
-            <div class="flex-1 min-w-0">
-              <div class="font-semibold text-gray-900 dark:text-white text-sm sm:text-base leading-snug">
-                ${highlightText(tool.name, query)}
+            <div class="suggestion-content">
+              <div class="suggestion-icon">
+                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
               </div>
-              <div class="text-xs sm:text-sm text-gray-500 dark:text-gray-400 line-clamp-1 mt-1.5 leading-relaxed">
-                ${highlightText(tool.description, query)}
+              <div class="suggestion-text">
+                <div class="suggestion-title text-gray-900 dark:text-gray-100">
+                  ${highlightText(tool.name, query)}
+                </div>
+                <div class="suggestion-description text-gray-600 dark:text-gray-400 line-clamp-1">
+                  ${highlightText(tool.description, query)}
+                </div>
               </div>
             </div>
           </div>
@@ -676,6 +685,31 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     });
   }
 
+  // 更新空状态文本（用于语言切换）
+  function updateEmptyStateText(locale) {
+    const messageEl = document.getElementById('empty-state-message');
+    const descEl = document.getElementById('empty-state-description');
+    
+    if (messageEl && descEl) {
+      const emptyState = translations[locale]?.emptyState || translations.zh.emptyState;
+      messageEl.textContent = emptyState.message;
+      descEl.textContent = emptyState.description;
+    }
+  }
+
+  // 监听语言变更事件
+  window.addEventListener('localechange', function(e) {
+    const locale = (e.detail && e.detail.locale) ? e.detail.locale : getLocale();
+    // 更新空状态文本
+    updateEmptyStateText(locale);
+    // 如果当前显示的是空状态，重新渲染以更新文本
+    const container = document.getElementById('tools-container');
+    if (container && filteredTools.length === 0) {
+      const isSearching = currentQuery !== '';
+      renderTools(filteredTools, currentPage, false, isSearching);
+    }
+  });
+
   // 初始化
   document.addEventListener('DOMContentLoaded', async () => {
     console.log('DOMContentLoaded - Initializing...');
@@ -694,9 +728,10 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       // 如果没有 URL 参数，从服务端渲染的页码读取
       const paginationContainer = document.getElementById('pagination-container');
       if (paginationContainer) {
-        const pageInfo = paginationContainer.querySelector('.text-sm');
+        const pageInfo = paginationContainer.querySelector('#pagination-page-info');
         if (pageInfo) {
-          const match = pageInfo.textContent.match(/页 (\d+) \/ \d+/);
+          // 使用更通用的正则匹配数字模式，支持多语言
+          const match = pageInfo.textContent.match(/(\d+)\s*\/\s*\d+/);
           if (match) {
             currentPage = parseInt(match[1], 10);
           }
