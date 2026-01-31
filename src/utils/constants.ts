@@ -7,14 +7,8 @@ export const SEARCH_DEBOUNCE_MS = 150;
 export const FUSE_SEARCH_LIMIT = 8;
 export const FUSE_SEARCH_THRESHOLD = 0.3;
 
-// 主题颜色常量
-export const COLORS = {
-  PRODUCTHUNT: '#FF5A50',
-  PRODUCTHUNT_HOVER: '#E84A3F',
-  PRODUCTHUNT_LIGHT: '#FFF5F4',
-  PRODUCTHUNT_DARK: '#FF6B60',
-  PRODUCTHUNT_DARK_HOVER: '#FF8A80',
-} as const;
+// 主题颜色常量（向后兼容，推荐使用 theme.ts 中的 THEME_COLORS）
+export { COLORS } from './theme';
 
 // DOM 元素 ID
 export const DOM_IDS = {

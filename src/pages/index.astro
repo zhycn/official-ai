@@ -38,7 +38,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
         </p>
         <p class="text-base sm:text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
           <span id="stats-text" class="inline-flex items-center gap-2">
-            <span class="px-2.5 py-1 rounded-md bg-producthunt-light dark:bg-producthunt/10 text-sm font-medium text-producthunt dark:text-producthunt-dark">
+            <span class="stats-badge px-2.5 py-1 rounded-md text-sm font-medium">
               {t('page.stats', locale)}
             </span>
             <span id="total-count" class="font-semibold text-gray-900 dark:text-white">{toolsData.length}</span>
@@ -73,6 +73,22 @@ const initialTools = toolsData.slice(startIndex, endIndex);
 </Layout>
 
 <script define:vars={{ toolsData, ITEMS_PER_PAGE, SEARCH_DEBOUNCE_MS, FUSE_SEARCH_LIMIT, FUSE_SEARCH_THRESHOLD, DOM_IDS, COLORS, translationsJSON, locale }}>
+  // ==================== 主题颜色工具函数 ====================
+  
+  // 获取 CSS 变量值（用于动态 HTML）
+  function getCSSVar(varName) {
+    return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+  }
+  
+  // 获取主题颜色（用于内联样式）
+  const themeColors = {
+    primary: '#FF5A50',
+    primaryDark: '#FF6B60',
+    primaryHover: '#E84A3F',
+    primaryLight: '#FFF5F4',
+    primaryLightDark: 'rgba(255, 90, 80, 0.1)',
+  };
+  
   // ==================== 客户端 i18n 工具函数（统一实现）====================
   
   // HTML 转义函数
@@ -290,6 +306,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     log: (...args) => { if (isDev) console.log('[Official AI]', ...args); },
     error: (...args) => { if (isDev) console.error('[Official AI]', ...args); },
     warn: (...args) => { if (isDev) console.warn('[Official AI]', ...args); },
+    debug: (...args) => { if (isDev) console.debug('[Official AI]', ...args); },
   };
   
   // ==================== 搜索管理器类 ====================
@@ -362,11 +379,18 @@ const initialTools = toolsData.slice(startIndex, endIndex);
             throw new Error('Fuse.js not available');
           }
           
-          // 创建搜索索引
+          // 创建搜索索引 - 参考Google搜索，使用更宽松的配置
           this.fuse = new Fuse(this.toolsData, {
-            keys: ['name', 'description'],
-            threshold: FUSE_SEARCH_THRESHOLD,
+            keys: [
+              { name: 'name', weight: 0.8 },      // 名称匹配权重更高
+              { name: 'description', weight: 0.2 } // 描述匹配权重较低
+            ],
+            threshold: 0.5,  // 进一步放宽阈值（0.0=完全匹配，1.0=匹配所有），0.5允许更多结果
             includeScore: true,
+            minMatchCharLength: 1,  // 最小匹配字符长度
+            ignoreLocation: true,   // 忽略位置，提高匹配率
+            findAllMatches: false,  // 不查找所有匹配，提高性能
+            shouldSort: true,       // 确保结果排序
           });
           
           this.isInitialized = true;
@@ -391,19 +415,38 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       }
       
       try {
-        const results = this.fuse.search(query, { limit });
+        // Fuse.js 搜索，返回结果按相关性排序
+        // 增加搜索limit，确保去重后仍有足够的结果
+        const searchLimit = Math.max(limit * 3, 30); // 搜索更多结果以便去重
+        const results = this.fuse.search(query, { limit: searchLimit });
+        
+        // 提取工具项，保持 Fuse.js 的排序（相关性从高到低）
         const items = results.map((result) => result.item);
         
-        // 去重：基于 id 或 name
+        // 去重：基于 id 或 name，保留第一个出现的（相关性最高的）
         const seen = new Set();
-        return items.filter((tool) => {
+        const uniqueItems = [];
+        for (const tool of items) {
           const key = tool.id || tool.name;
-          if (seen.has(key)) {
-            return false;
+          if (!seen.has(key)) {
+            seen.add(key);
+            uniqueItems.push(tool);
+            // 如果已经达到需要的数量，提前退出
+            if (uniqueItems.length >= limit) {
+              break;
+            }
           }
-          seen.add(key);
-          return true;
-        });
+        }
+        
+        // 调试信息
+        if (isDev && query) {
+          console.log('[搜索] 查询:', query, 'Fuse结果数:', results.length, '去重后:', uniqueItems.length, '限制:', limit);
+          if (uniqueItems.length < limit && results.length > 0) {
+            console.warn('[搜索警告] 结果数量不足，可能需要调整threshold');
+          }
+        }
+        
+        return uniqueItems;
       } catch (error) {
         logger.error('Search error:', error);
         return [];
@@ -472,8 +515,8 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       
       container.innerHTML = `
         <div class="col-span-full flex flex-col items-center justify-center py-12 px-4">
-          <div class="w-24 h-24 mb-5 rounded-full bg-[${COLORS.PRODUCTHUNT_LIGHT}] dark:bg-[${COLORS.PRODUCTHUNT}]/10 flex items-center justify-center">
-            <svg class="w-12 h-12 text-[${COLORS.PRODUCTHUNT}] dark:text-[${COLORS.PRODUCTHUNT_DARK}]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="empty-state-icon w-24 h-24 mb-5 rounded-full flex items-center justify-center">
+            <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
@@ -517,17 +560,17 @@ const initialTools = toolsData.slice(startIndex, endIndex);
             href="${escapeHtml(tool.url)}"
             target="_blank"
             rel="noopener noreferrer"
-            class="group relative block p-5 sm:p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-[${COLORS.PRODUCTHUNT}] dark:hover:border-[${COLORS.PRODUCTHUNT_DARK}] hover:shadow-lg hover:shadow-[${COLORS.PRODUCTHUNT}]/10 dark:hover:shadow-[${COLORS.PRODUCTHUNT_DARK}]/20 transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.02] before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-[${COLORS.PRODUCTHUNT_LIGHT}]/0 before:via-[${COLORS.PRODUCTHUNT_LIGHT}]/0 before:to-[${COLORS.PRODUCTHUNT_LIGHT}]/0 hover:before:from-[${COLORS.PRODUCTHUNT_LIGHT}]/60 hover:before:via-[${COLORS.PRODUCTHUNT_LIGHT}]/30 hover:before:to-transparent dark:hover:before:from-[${COLORS.PRODUCTHUNT}]/5 dark:hover:before:via-[${COLORS.PRODUCTHUNT}]/3 dark:hover:before:to-transparent before:transition-all before:duration-300 before:-z-10"
+            class="tool-card card-hover-primary group relative block p-5 sm:p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.02] before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-[var(--theme-primary-light)]/0 before:via-[var(--theme-primary-light)]/0 before:to-[var(--theme-primary-light)]/0 hover:before:from-[var(--theme-primary-light)]/60 hover:before:via-[var(--theme-primary-light)]/30 hover:before:to-transparent dark:hover:before:from-[var(--theme-primary)]/5 dark:hover:before:via-[var(--theme-primary)]/3 dark:hover:before:to-transparent before:transition-all before:duration-300 before:-z-10"
           >
             <div class="relative z-10 flex items-start justify-between mb-2.5 sm:mb-3">
               <div class="flex items-center gap-3 flex-1 min-w-0">
-                <span class="flex-shrink-0 w-2.5 h-2.5 bg-gradient-to-br from-[${COLORS.PRODUCTHUNT}] via-[${COLORS.PRODUCTHUNT_DARK}] to-[${COLORS.PRODUCTHUNT}] rounded-full mt-1 shadow-sm shadow-[${COLORS.PRODUCTHUNT}]/50 ring-1 ring-[${COLORS.PRODUCTHUNT}]/20"></span>
-                <h3 class="font-semibold text-gray-900 dark:text-white truncate group-hover:text-[${COLORS.PRODUCTHUNT}] dark:group-hover:text-[${COLORS.PRODUCTHUNT_DARK}] transition-colors duration-300 text-base sm:text-lg leading-snug">
+                <span class="tool-card-indicator flex-shrink-0 w-2.5 h-2.5 rounded-full mt-1 shadow-sm ring-1"></span>
+                <h3 class="tool-card-title font-semibold text-gray-900 dark:text-white truncate transition-colors duration-300 text-base sm:text-lg leading-snug">
                   ${escapeHtml(tool.name)}
                 </h3>
               </div>
               <button
-                class="flex-shrink-0 p-1.5 sm:p-2 text-gray-400 dark:text-gray-500 hover:text-[${COLORS.PRODUCTHUNT}] dark:hover:text-[${COLORS.PRODUCTHUNT_DARK}] hover:bg-[${COLORS.PRODUCTHUNT_LIGHT}] dark:hover:bg-[${COLORS.PRODUCTHUNT}]/10 rounded-lg transition-all duration-300 active:scale-95 touch-manipulation"
+                class="tool-card-button flex-shrink-0 p-1.5 sm:p-2 text-gray-400 dark:text-gray-500 rounded-lg transition-all duration-300 active:scale-95 touch-manipulation"
                 aria-label="${escapeHtml(openLinkLabel)}"
                 onclick="event.preventDefault(); event.stopPropagation(); window.open('${escapeHtml(tool.url)}', '_blank', 'noopener,noreferrer');"
               >
@@ -623,7 +666,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     // 创建上一页按钮
     const prevBtn = document.createElement('button');
     prevBtn.id = 'prev-page';
-    prevBtn.className = `inline-flex items-center justify-center px-4 py-2 sm:px-5 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-[${COLORS.PRODUCTHUNT_LIGHT}] dark:hover:bg-[${COLORS.PRODUCTHUNT}]/10 hover:border-[${COLORS.PRODUCTHUNT}] dark:hover:border-[${COLORS.PRODUCTHUNT_DARK}] hover:text-[${COLORS.PRODUCTHUNT}] dark:hover:text-[${COLORS.PRODUCTHUNT_DARK}] transition-all duration-200 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 disabled:hover:text-gray-700 disabled:hover:shadow-none dark:disabled:hover:bg-gray-800 dark:disabled:hover:border-gray-700 dark:disabled:hover:text-gray-300 touch-manipulation`;
+    prevBtn.className = 'pagination-btn inline-flex items-center justify-center px-4 py-2 sm:px-5 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg transition-all duration-200 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 disabled:hover:text-gray-700 disabled:hover:shadow-none dark:disabled:hover:bg-gray-800 dark:disabled:hover:border-gray-700 dark:disabled:hover:text-gray-300 touch-manipulation';
     prevBtn.disabled = page === 1;
     
     const prevText = document.createElement('span');
@@ -635,7 +678,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     // 创建下一页按钮
     const nextBtn = document.createElement('button');
     nextBtn.id = 'next-page';
-    nextBtn.className = `inline-flex items-center justify-center px-4 py-2 sm:px-5 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-[${COLORS.PRODUCTHUNT_LIGHT}] dark:hover:bg-[${COLORS.PRODUCTHUNT}]/10 hover:border-[${COLORS.PRODUCTHUNT}] dark:hover:border-[${COLORS.PRODUCTHUNT_DARK}] hover:text-[${COLORS.PRODUCTHUNT}] dark:hover:text-[${COLORS.PRODUCTHUNT_DARK}] transition-all duration-200 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 disabled:hover:text-gray-700 disabled:hover:shadow-none dark:disabled:hover:bg-gray-800 dark:disabled:hover:border-gray-700 dark:disabled:hover:text-gray-300 touch-manipulation`;
+    nextBtn.className = 'pagination-btn inline-flex items-center justify-center px-4 py-2 sm:px-5 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg transition-all duration-200 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 disabled:hover:text-gray-700 disabled:hover:shadow-none dark:disabled:hover:bg-gray-800 dark:disabled:hover:border-gray-700 dark:disabled:hover:text-gray-300 touch-manipulation';
     nextBtn.disabled = page === totalPages;
     
     const nextText = document.createElement('span');
@@ -738,43 +781,89 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       const locale = getClientLocale();
       const t = translations[locale] || translations['zh'];
 
+      // 调试：记录搜索结果数量
+      if (isDev) {
+        console.log('[搜索建议] 查询:', query, '结果数量:', suggestions.length);
+      }
+
       if (suggestions.length === 0) {
         suggestionsList.innerHTML = `
-          <div class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+          <div class="empty-suggestion px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
             ${escapeHtml(t.search.noResults)}
           </div>
         `;
         suggestionsContainer.classList.remove('hidden');
       } else {
-        const suggestionsHTML = suggestions
-          .map(
-            (tool, index) => `
-          <div
-            class="suggestion-item px-3 py-2 cursor-pointer"
-            data-index="${index}"
-            data-name="${escapeHtml(tool.name)}"
-            role="option"
-            aria-selected="${index === selectedIndex ? 'true' : 'false'}"
-            id="suggestion-${index}"
-            tabindex="${index === selectedIndex ? '0' : '-1'}"
-          >
-            <div class="suggestion-content">
-              <div class="suggestion-icon" aria-hidden="true">
-                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <span class="suggestion-title text-gray-900 dark:text-gray-100">
-                ${searchManager.highlightText(tool.name, query)}
-              </span>
-            </div>
-          </div>
-        `
-          )
-          .join('');
-
-        suggestionsList.innerHTML = suggestionsHTML;
-        // 注意：点击事件已在 bindSearchEvents 中通过事件委托统一处理，无需重复绑定
+        // 清空列表
+        suggestionsList.innerHTML = '';
+        
+        // 逐个创建并插入建议项（Google风格：图标+名称，单行显示）
+        suggestions.forEach((tool, index) => {
+          const highlightedName = searchManager.highlightText(tool.name, query);
+          const isSelected = index === selectedIndex;
+          
+          // 创建建议项元素
+          const itemDiv = document.createElement('div');
+          itemDiv.className = 'suggestion-item px-4 py-2.5 cursor-pointer';
+          itemDiv.setAttribute('data-index', String(index));
+          itemDiv.setAttribute('data-name', escapeHtml(tool.name));
+          itemDiv.setAttribute('role', 'option');
+          itemDiv.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+          itemDiv.id = `suggestion-${index}`;
+          itemDiv.setAttribute('tabindex', isSelected ? '0' : '-1');
+          
+          // 创建内容容器（横向布局：图标 + 名称）
+          const contentDiv = document.createElement('div');
+          contentDiv.className = 'suggestion-content';
+          
+          // 创建图标容器
+          const iconDiv = document.createElement('div');
+          iconDiv.className = 'suggestion-icon';
+          iconDiv.setAttribute('aria-hidden', 'true');
+          
+          // 创建 SVG 图标（Google风格）
+          const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          svg.setAttribute('class', 'w-5 h-5');
+          svg.setAttribute('fill', 'none');
+          svg.setAttribute('stroke', 'currentColor');
+          svg.setAttribute('viewBox', '0 0 24 24');
+          svg.setAttribute('stroke-width', '2');
+          svg.setAttribute('style', 'color: inherit;'); // 继承父元素颜色
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path.setAttribute('stroke-linecap', 'round');
+          path.setAttribute('stroke-linejoin', 'round');
+          path.setAttribute('d', 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z');
+          svg.appendChild(path);
+          iconDiv.appendChild(svg);
+          
+          // 创建标题（只显示名称，不显示描述）
+          const titleSpan = document.createElement('span');
+          titleSpan.className = 'suggestion-title';
+          titleSpan.innerHTML = highlightedName;
+          
+          // 组装结构：图标在前，名称在后
+          contentDiv.appendChild(iconDiv);
+          contentDiv.appendChild(titleSpan);
+          itemDiv.appendChild(contentDiv);
+          
+          // 插入到列表
+          suggestionsList.appendChild(itemDiv);
+        });
+        
+        // 验证：确保所有建议项都已插入
+        const insertedItems = suggestionsList.querySelectorAll('.suggestion-item');
+        if (insertedItems.length !== suggestions.length) {
+          logger.warn(`搜索建议数量不匹配: 期望 ${suggestions.length} 条，实际插入 ${insertedItems.length} 条`);
+          if (isDev) {
+            console.error('[错误] 搜索查询:', query);
+            console.error('[错误] 搜索结果数量:', suggestions.length);
+            console.error('[错误] 搜索结果名称:', suggestions.map(s => s.name));
+            console.error('[错误] 实际插入的元素数量:', insertedItems.length);
+            console.error('[错误] DOM 结构:', suggestionsList.innerHTML.substring(0, 500));
+          }
+        } else if (isDev) {
+          console.log('[搜索建议] ✓ 成功插入', insertedItems.length, '条建议');
+        }
         
         // 更新 ARIA 属性
         suggestionsContainer.setAttribute('aria-expanded', 'true');
@@ -874,13 +963,16 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       const target = e.target;
       const query = target && target.tagName === 'INPUT' ? target.value : '';
       
-      // 显示/隐藏清除按钮
-      if (searchClear) {
-        if (query.trim()) {
-          searchClear.classList.remove('hidden');
-        } else {
-          searchClear.classList.add('hidden');
-        }
+      // 显示/隐藏清除按钮 - 同时处理桌面端和移动端
+      const desktopClear = document.getElementById(DOM_IDS.SEARCH_CLEAR);
+      const mobileClear = document.getElementById('mobile-search-clear');
+      
+      if (query.trim()) {
+        if (desktopClear) desktopClear.classList.remove('hidden');
+        if (mobileClear) mobileClear.classList.remove('hidden');
+      } else {
+        if (desktopClear) desktopClear.classList.add('hidden');
+        if (mobileClear) mobileClear.classList.add('hidden');
       }
 
       clearTimeout(inputTimeout);

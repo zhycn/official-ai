@@ -13,7 +13,7 @@ const languageConfig = clientTranslations[safeLocale].language;
   <button
     id="language-toggle"
     type="button"
-    class="language-toggle-btn p-2 rounded-lg text-gray-600 dark:text-gray-400 transition-colors duration-200 touch-manipulation flex items-center justify-center"
+    class="language-toggle-btn btn-hover-primary p-2 rounded-lg text-gray-600 dark:text-gray-400 transition-colors duration-200 touch-manipulation flex items-center justify-center"
     aria-label={languageConfig.ariaLabel}
     title={languageConfig.toggle}
   >
@@ -25,18 +25,6 @@ const languageConfig = clientTranslations[safeLocale].language;
     <span id="language-display" class="ml-1.5 hidden sm:inline-block text-xs font-medium">{languageConfig.display[safeLocale]}</span>
   </button>
 </div>
-
-<style>
-  .language-toggle-btn:hover {
-    color: #FF5A50;
-    background-color: #FFF5F4;
-  }
-  
-  .dark .language-toggle-btn:hover {
-    color: #FF6B60;
-    background-color: rgba(255, 90, 80, 0.1);
-  }
-</style>
 
 <script define:vars={{ clientTranslations, COLORS }}>
   // ==================== 客户端 i18n 工具函数（内联版本，避免导入问题）====================
@@ -157,7 +145,7 @@ const languageConfig = clientTranslations[safeLocale].language;
       
       const colors = this.colors;
       statsText.innerHTML = `<span class="inline-flex items-center gap-2">
-        <span class="px-2.5 py-1 rounded-md bg-[${colors.PRODUCTHUNT_LIGHT || '#FFF5F4'}] dark:bg-[${colors.PRODUCTHUNT || '#FF5A50'}]/10 text-sm font-medium text-[${colors.PRODUCTHUNT || '#FF5A50'}] dark:text-[${colors.PRODUCTHUNT_DARK || '#FF6B60'}]">${escapeHtml(statsLabel)}</span>
+        <span class="stats-badge px-2.5 py-1 rounded-md text-sm font-medium">${escapeHtml(statsLabel)}</span>
         <span id="total-count" class="font-semibold text-gray-900 dark:text-white">${escapeHtml(totalCount)}</span>
         <span>${escapeHtml(t.page.items)}</span>
       </span>`;

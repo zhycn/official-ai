@@ -75,17 +75,17 @@ export function generateToolCardHTML(
       href="${escapeHtml(tool.url)}"
       target="_blank"
       rel="noopener noreferrer"
-      class="group relative block p-5 sm:p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-[#FF5A50] dark:hover:border-[#FF6B60] hover:shadow-lg hover:shadow-[#FF5A50]/10 dark:hover:shadow-[#FF6B60]/20 transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.02] before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-[#FFF5F4]/0 before:via-[#FFF5F4]/0 before:to-[#FFF5F4]/0 hover:before:from-[#FFF5F4]/60 hover:before:via-[#FFF5F4]/30 hover:before:to-transparent dark:hover:before:from-[#FF5A50]/5 dark:hover:before:via-[#FF5A50]/3 dark:hover:before:to-transparent before:transition-all before:duration-300 before:-z-10"
+      class="tool-card card-hover-primary group relative block p-5 sm:p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.02] before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-[var(--theme-primary-light)]/0 before:via-[var(--theme-primary-light)]/0 before:to-[var(--theme-primary-light)]/0 hover:before:from-[var(--theme-primary-light)]/60 hover:before:via-[var(--theme-primary-light)]/30 hover:before:to-transparent dark:hover:before:from-[var(--theme-primary)]/5 dark:hover:before:via-[var(--theme-primary)]/3 dark:hover:before:to-transparent before:transition-all before:duration-300 before:-z-10"
     >
       <div class="relative z-10 flex items-start justify-between mb-3 sm:mb-4">
         <div class="flex items-center gap-3 flex-1 min-w-0">
-          <span class="flex-shrink-0 w-2.5 h-2.5 bg-gradient-to-br from-[#FF5A50] via-[#FF6B60] to-[#FF5A50] rounded-full mt-1 shadow-sm shadow-[#FF5A50]/50 ring-1 ring-[#FF5A50]/20"></span>
-          <h3 class="font-semibold text-gray-900 dark:text-white truncate group-hover:text-[#FF5A50] dark:group-hover:text-[#FF6B60] transition-colors duration-300 text-base sm:text-lg leading-snug">
+          <span class="tool-card-indicator flex-shrink-0 w-2.5 h-2.5 rounded-full mt-1 shadow-sm ring-1"></span>
+          <h3 class="tool-card-title font-semibold text-gray-900 dark:text-white truncate transition-colors duration-300 text-base sm:text-lg leading-snug">
             ${escapeHtml(tool.name)}
           </h3>
         </div>
         <button
-          class="flex-shrink-0 p-1.5 sm:p-2 text-gray-400 dark:text-gray-500 hover:text-[#FF5A50] dark:hover:text-[#FF6B60] hover:bg-[#FFF5F4] dark:hover:bg-[#FF5A50]/10 rounded-lg transition-all duration-300 active:scale-95 touch-manipulation"
+          class="tool-card-button flex-shrink-0 p-1.5 sm:p-2 text-gray-400 dark:text-gray-500 rounded-lg transition-all duration-300 active:scale-95 touch-manipulation"
           aria-label="${escapeHtml(openLinkLabel)}"
           onclick="event.preventDefault(); event.stopPropagation(); window.open('${escapeHtml(tool.url)}', '_blank', 'noopener,noreferrer');"
         >
@@ -113,8 +113,8 @@ export function generateEmptyStateHTML(
   
   return `
     <div class="col-span-full flex flex-col items-center justify-center py-16 px-4">
-      <div class="w-24 h-24 mb-6 rounded-full bg-[#FFF5F4] dark:bg-[#FF5A50]/10 flex items-center justify-center">
-        <svg class="w-12 h-12 text-[#FF5A50] dark:text-[#FF6B60]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="empty-state-icon w-24 h-24 mb-6 rounded-full flex items-center justify-center">
+        <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
         </svg>
       </div>

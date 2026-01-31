@@ -1,6 +1,5 @@
 ---
 import { getLocaleFromAstro, t } from '../i18n/locales';
-import { COLORS } from '../utils/constants';
 
 interface Props {
   id: string;
@@ -18,17 +17,17 @@ const locale = getLocaleFromAstro();
   href={url}
   target="_blank"
   rel="noopener noreferrer"
-  class={`group relative block p-4 sm:p-5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-[${COLORS.PRODUCTHUNT}] dark:hover:border-[${COLORS.PRODUCTHUNT_DARK}] hover:shadow-lg hover:shadow-[${COLORS.PRODUCTHUNT}]/10 dark:hover:shadow-[${COLORS.PRODUCTHUNT_DARK}]/20 transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.02] before:absolute before:inset-0 before:rounded-2xl before:bg-linear-to-br before:from-[${COLORS.PRODUCTHUNT_LIGHT}]/0 before:via-[${COLORS.PRODUCTHUNT_LIGHT}]/0 before:to-[${COLORS.PRODUCTHUNT_LIGHT}]/0 hover:before:from-[${COLORS.PRODUCTHUNT_LIGHT}]/60 hover:before:via-[${COLORS.PRODUCTHUNT_LIGHT}]/30 hover:before:to-transparent dark:hover:before:from-[${COLORS.PRODUCTHUNT}]/5 dark:hover:before:via-[${COLORS.PRODUCTHUNT}]/3 dark:hover:before:to-transparent before:transition-all before:duration-300 before:-z-10`}
+  class="tool-card card-hover-primary group relative block p-4 sm:p-5 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.02] before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-[var(--theme-primary-light)]/0 before:via-[var(--theme-primary-light)]/0 before:to-[var(--theme-primary-light)]/0 hover:before:from-[var(--theme-primary-light)]/60 hover:before:via-[var(--theme-primary-light)]/30 hover:before:to-transparent dark:hover:before:from-[var(--theme-primary)]/5 dark:hover:before:via-[var(--theme-primary)]/3 dark:hover:before:to-transparent before:transition-all before:duration-300 before:-z-10"
 >
   <div class="relative z-10 flex items-center justify-between mb-2.5 sm:mb-3">
     <div class="flex items-center gap-3 flex-1 min-w-0">
-      <span class={`shrink-0 w-2.5 h-2.5 bg-linear-to-br from-[${COLORS.PRODUCTHUNT}] via-[${COLORS.PRODUCTHUNT_DARK}] to-[${COLORS.PRODUCTHUNT}] rounded-full shadow-sm shadow-[${COLORS.PRODUCTHUNT}]/50 ring-1 ring-[${COLORS.PRODUCTHUNT}]/20`}></span>
-      <h3 class={`font-semibold text-gray-900 dark:text-white truncate group-hover:text-[${COLORS.PRODUCTHUNT}] dark:group-hover:text-[${COLORS.PRODUCTHUNT_DARK}] transition-colors duration-300 text-base sm:text-lg leading-tight`}>
+      <span class="tool-card-indicator shrink-0 w-2.5 h-2.5 rounded-full shadow-sm ring-1"></span>
+      <h3 class="tool-card-title font-semibold text-gray-900 dark:text-white truncate transition-colors duration-300 text-base sm:text-lg leading-tight">
         {name}
       </h3>
     </div>
     <button
-      class={`shrink-0 flex items-center justify-center p-1.5 sm:p-2 text-gray-400 dark:text-gray-500 hover:text-[${COLORS.PRODUCTHUNT}] dark:hover:text-[${COLORS.PRODUCTHUNT_DARK}] hover:bg-[${COLORS.PRODUCTHUNT_LIGHT}] dark:hover:bg-[${COLORS.PRODUCTHUNT}]/10 rounded-lg transition-all duration-300 active:scale-95 touch-manipulation`}
+      class="tool-card-button shrink-0 flex items-center justify-center p-1.5 sm:p-2 text-gray-400 dark:text-gray-500 rounded-lg transition-all duration-300 active:scale-95 touch-manipulation"
       aria-label={t('toolCard.openLink', locale)}
       onclick="event.preventDefault(); event.stopPropagation(); window.open(url, '_blank', 'noopener,noreferrer');"
     >

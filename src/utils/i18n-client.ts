@@ -3,7 +3,6 @@
  */
 
 import type { Locale, Translations } from '../i18n/locales';
-import { COLORS } from './constants';
 import { escapeHtml } from './dom';
 
 /**
@@ -143,7 +142,7 @@ export class I18nUpdater {
     const totalCount = total !== undefined ? String(total) : (document.getElementById('total-count')?.textContent || '0');
     
     statsText.innerHTML = `<span class="inline-flex items-center gap-2">
-      <span class="px-2.5 py-1 rounded-md bg-[${COLORS.PRODUCTHUNT_LIGHT}] dark:bg-[${COLORS.PRODUCTHUNT}]/10 text-sm font-medium text-[${COLORS.PRODUCTHUNT}] dark:text-[${COLORS.PRODUCTHUNT_DARK}]">${escapeHtml(statsLabel)}</span>
+      <span class="stats-badge px-2.5 py-1 rounded-md text-sm font-medium">${escapeHtml(statsLabel)}</span>
       <span id="total-count" class="font-semibold text-gray-900 dark:text-white">${escapeHtml(totalCount)}</span>
       <span>${escapeHtml(t.page.items)}</span>
     </span>`;

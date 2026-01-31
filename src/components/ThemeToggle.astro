@@ -6,7 +6,7 @@ import { COLORS } from '../utils/constants';
 <button
   id="theme-toggle"
   type="button"
-  class="theme-toggle-btn p-2 rounded-lg text-gray-600 dark:text-gray-400 transition-colors duration-200 relative touch-manipulation"
+  class="theme-toggle-btn btn-hover-primary p-2 rounded-lg text-gray-600 dark:text-gray-400 transition-colors duration-200 relative touch-manipulation"
   aria-label="Toggle theme"
 >
   <!-- 亮色模式图标 -->
@@ -18,18 +18,6 @@ import { COLORS } from '../utils/constants';
     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
   </svg>
 </button>
-
-<style>
-  .theme-toggle-btn:hover {
-    color: #FF5A50;
-    background-color: #FFF5F4;
-  }
-  
-  .dark .theme-toggle-btn:hover {
-    color: #FF6B60;
-    background-color: rgba(255, 90, 80, 0.1);
-  }
-</style>
 
 <script is:inline>
   (function() {
