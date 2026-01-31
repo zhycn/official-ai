@@ -57,9 +57,37 @@ const locale = getLocaleFromAstro();
 </Layout>
 
 <script define:vars={{ clientTranslations }}>
-  // 获取当前语言
-  function getLocale() {
-    return localStorage.getItem('locale') || 'zh';
+  // ==================== 客户端 i18n 工具函数（内联版本）====================
+  
+  // 获取当前语言（客户端）
+  function getClientLocale() {
+    if (typeof window === 'undefined') return 'zh';
+    try {
+      const saved = localStorage.getItem('locale');
+      if (saved === 'zh' || saved === 'en') {
+        return saved;
+      }
+      const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+        const [key, value] = cookie.trim().split('=');
+        if (key) {
+          try {
+            acc[decodeURIComponent(key)] = decodeURIComponent(value || '');
+          } catch (e) {
+            acc[key] = value || '';
+          }
+        }
+        return acc;
+      }, {});
+      if (cookies.locale === 'zh' || cookies.locale === 'en') {
+        localStorage.setItem('locale', cookies.locale);
+        return cookies.locale;
+      }
+      const browserLang = navigator.language || navigator.userLanguage || '';
+      if (browserLang.startsWith('zh')) return 'zh';
+      if (browserLang.startsWith('en')) return 'en';
+    } catch (e) {
+    }
+    return 'zh';
   }
   
   // 更新页面文本
@@ -88,12 +116,12 @@ const locale = getLocaleFromAstro();
     const event = e instanceof CustomEvent ? e : null;
     const locale = (event?.detail?.locale === 'zh' || event?.detail?.locale === 'en') 
       ? event.detail.locale 
-      : getLocale();
+      : getClientLocale();
     updatePageText(locale);
   });
   
   // 初始化时更新文本（处理客户端渲染）
   if (typeof window !== 'undefined') {
-    updatePageText(getLocale());
+    updatePageText(getClientLocale());
   }
 </script>

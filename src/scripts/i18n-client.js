@@ -1,16 +1,13 @@
 /**
- * 客户端国际化工具 - 统一的客户端 i18n 处理
+ * 客户端国际化工具 - 统一实现
+ * 注意：这是 JavaScript 文件，可以在 Astro script 标签中使用
  */
-
-import type { Locale, Translations } from '../i18n/locales';
-import { COLORS } from './constants';
-import { escapeHtml } from './dom';
 
 /**
  * 获取当前语言（客户端）
  * 优先级：localStorage > Cookie > navigator.language > 默认值(zh)
  */
-export function getClientLocale(): Locale {
+export function getClientLocale() {
   if (typeof window === 'undefined') {
     return 'zh';
   }
@@ -25,9 +22,15 @@ export function getClientLocale(): Locale {
     // 2. 如果 localStorage 没有，尝试从 Cookie 读取（同步服务端状态）
     const cookies = document.cookie.split(';').reduce((acc, cookie) => {
       const [key, value] = cookie.trim().split('=');
-      if (key) acc[decodeURIComponent(key)] = decodeURIComponent(value || '');
+      if (key) {
+        try {
+          acc[decodeURIComponent(key)] = decodeURIComponent(value || '');
+        } catch (e) {
+          acc[key] = value || '';
+        }
+      }
       return acc;
-    }, {} as Record<string, string>);
+    }, {});
     
     if (cookies.locale === 'zh' || cookies.locale === 'en') {
       // 同步到 localStorage
@@ -36,10 +39,7 @@ export function getClientLocale(): Locale {
     }
     
     // 3. 从浏览器语言检测
-    const browserLang = navigator.language || 
-      (typeof (navigator as { userLanguage?: string }).userLanguage !== 'undefined' 
-        ? (navigator as { userLanguage: string }).userLanguage 
-        : '');
+    const browserLang = navigator.language || navigator.userLanguage || '';
     if (browserLang.startsWith('zh')) return 'zh';
     if (browserLang.startsWith('en')) return 'en';
   } catch (e) {
@@ -51,31 +51,37 @@ export function getClientLocale(): Locale {
 
 /**
  * 设置语言（客户端）
+ * 同时设置 localStorage 和 Cookie，确保服务端和客户端一致
  */
-export function setClientLocale(locale: Locale): void {
+export function setClientLocale(locale) {
   if (typeof window === 'undefined') return;
   
   try {
+    // 1. 设置 localStorage（客户端持久化）
     localStorage.setItem('locale', locale);
+    
+    // 2. 设置 Cookie（服务端可读取，避免刷新闪烁）
+    document.cookie = `locale=${locale}; path=/; max-age=31536000; SameSite=Lax`;
+    
+    // 3. 更新 HTML lang 属性
+    document.documentElement.lang = locale === 'zh' ? 'zh-CN' : 'en';
+    
+    // 4. 触发全局语言变更事件（供页面监听）
     window.dispatchEvent(new CustomEvent('localechange', { 
       detail: { locale } 
     }));
   } catch (e) {
-    // localStorage 不可用时忽略
+    // localStorage/Cookie 不可用时忽略
   }
 }
 
 /**
  * 客户端翻译函数
  */
-export function tClient(
-  key: string,
-  translations: Record<Locale, Translations>,
-  locale?: Locale
-): string {
+export function tClient(key, translations, locale) {
   const currentLocale = locale || getClientLocale();
   const keys = key.split('.');
-  let value: unknown = translations[currentLocale];
+  let value = translations[currentLocale];
   
   for (const k of keys) {
     if (value == null || typeof value !== 'object') {
@@ -88,19 +94,28 @@ export function tClient(
 }
 
 /**
- * 国际化更新器 - 自动更新页面中的所有国际化文本
+ * HTML 转义函数
+ */
+export function escapeHtml(text) {
+  if (!text) return '';
+  const div = document.createElement('div');
+  div.textContent = text;
+  return div.innerHTML;
+}
+
+/**
+ * 国际化更新器类 - 自动更新页面中的所有国际化文本
  */
 export class I18nUpdater {
-  private translations: Record<Locale, Translations>;
-  
-  constructor(translations: Record<Locale, Translations>) {
+  constructor(translations, colors) {
     this.translations = translations;
+    this.colors = colors;
   }
   
   /**
    * 更新所有页面文本
    */
-  updateAll(locale: Locale): void {
+  updateAll(locale) {
     const t = this.translations[locale] || this.translations['zh'];
     
     // 更新搜索框占位符
@@ -134,7 +149,7 @@ export class I18nUpdater {
   /**
    * 更新统计信息
    */
-  updateStats(locale: Locale, total?: number, isSearching = false): void {
+  updateStats(locale, total, isSearching = false) {
     const statsText = document.getElementById('stats-text');
     if (!statsText) return;
     
@@ -143,7 +158,7 @@ export class I18nUpdater {
     const totalCount = total !== undefined ? String(total) : (document.getElementById('total-count')?.textContent || '0');
     
     statsText.innerHTML = `<span class="inline-flex items-center gap-2">
-      <span class="px-2.5 py-1 rounded-md bg-[${COLORS.PRODUCTHUNT_LIGHT}] dark:bg-[${COLORS.PRODUCTHUNT}]/10 text-sm font-medium text-[${COLORS.PRODUCTHUNT}] dark:text-[${COLORS.PRODUCTHUNT_DARK}]">${escapeHtml(statsLabel)}</span>
+      <span class="px-2.5 py-1 rounded-md bg-[${this.colors.PRODUCTHUNT_LIGHT}] dark:bg-[${this.colors.PRODUCTHUNT}]/10 text-sm font-medium text-[${this.colors.PRODUCTHUNT}] dark:text-[${this.colors.PRODUCTHUNT_DARK}]">${escapeHtml(statsLabel)}</span>
       <span id="total-count" class="font-semibold text-gray-900 dark:text-white">${escapeHtml(totalCount)}</span>
       <span>${escapeHtml(t.page.items)}</span>
     </span>`;
@@ -152,7 +167,7 @@ export class I18nUpdater {
   /**
    * 更新分页文本
    */
-  updatePagination(locale: Locale): void {
+  updatePagination(locale) {
     const t = this.translations[locale] || this.translations['zh'];
     
     const pageInfo = document.getElementById('pagination-page-info');
@@ -177,7 +192,7 @@ export class I18nUpdater {
   /**
    * 更新空状态文本
    */
-  updateEmptyState(locale: Locale): void {
+  updateEmptyState(locale) {
     const messageEl = document.getElementById('empty-state-message');
     const descEl = document.getElementById('empty-state-description');
     
@@ -191,7 +206,7 @@ export class I18nUpdater {
   /**
    * 更新语言显示
    */
-  updateLanguageDisplay(locale: Locale): void {
+  updateLanguageDisplay(locale) {
     const t = this.translations[locale] || this.translations['zh'];
     const languageConfig = t.language;
     

@@ -27,33 +27,65 @@ const languageConfig = clientTranslations[safeLocale].language;
 </div>
 
 <script define:vars={{ clientTranslations, COLORS }}>
-  // ==================== 工具函数内联 ====================
+  // ==================== 客户端 i18n 工具函数（内联版本，避免导入问题）====================
   
   // 获取当前语言（客户端）
   function getClientLocale() {
+    if (typeof window === 'undefined') return 'zh';
     try {
+      // 1. 优先从 localStorage 读取
       const saved = localStorage.getItem('locale');
       if (saved === 'zh' || saved === 'en') {
         return saved;
       }
-      const browserLang = navigator.language || navigator.userLanguage;
+      
+      // 2. 如果 localStorage 没有，尝试从 Cookie 读取
+      const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+        const [key, value] = cookie.trim().split('=');
+        if (key) {
+          try {
+            acc[decodeURIComponent(key)] = decodeURIComponent(value || '');
+          } catch (e) {
+            acc[key] = value || '';
+          }
+        }
+        return acc;
+      }, {});
+      
+      if (cookies.locale === 'zh' || cookies.locale === 'en') {
+        localStorage.setItem('locale', cookies.locale);
+        return cookies.locale;
+      }
+      
+      // 3. 从浏览器语言检测
+      const browserLang = navigator.language || navigator.userLanguage || '';
       if (browserLang.startsWith('zh')) return 'zh';
       if (browserLang.startsWith('en')) return 'en';
     } catch (e) {
-      // localStorage 不可用时使用默认值
+      // localStorage/Cookie 不可用时使用默认值
     }
     return 'zh';
   }
   
   // 设置语言（客户端）
   function setClientLocale(locale) {
+    if (typeof window === 'undefined') return;
     try {
+      // 1. 设置 localStorage
       localStorage.setItem('locale', locale);
+      
+      // 2. 设置 Cookie（服务端可读取）
+      document.cookie = `locale=${locale}; path=/; max-age=31536000; SameSite=Lax`;
+      
+      // 3. 更新 HTML lang 属性
+      document.documentElement.lang = locale === 'zh' ? 'zh-CN' : 'en';
+      
+      // 4. 触发全局语言变更事件
       window.dispatchEvent(new CustomEvent('localechange', { 
         detail: { locale } 
       }));
     } catch (e) {
-      // localStorage 不可用时忽略
+      // localStorage/Cookie 不可用时忽略
     }
   }
   
@@ -67,8 +99,9 @@ const languageConfig = clientTranslations[safeLocale].language;
   
   // 国际化更新器类
   class I18nUpdater {
-    constructor(translations) {
+    constructor(translations, colors) {
       this.translations = translations;
+      this.colors = colors || {};
     }
     
     updateAll(locale) {
@@ -110,8 +143,9 @@ const languageConfig = clientTranslations[safeLocale].language;
       const statsLabel = isSearching ? t.page.statsSearch : t.page.stats;
       const totalCount = total !== undefined ? String(total) : (document.getElementById('total-count')?.textContent || '0');
       
+      const colors = this.colors;
       statsText.innerHTML = `<span class="inline-flex items-center gap-2">
-        <span class="px-2.5 py-1 rounded-md bg-[${COLORS.PRODUCTHUNT_LIGHT}] dark:bg-[${COLORS.PRODUCTHUNT}]/10 text-sm font-medium text-[${COLORS.PRODUCTHUNT}] dark:text-[${COLORS.PRODUCTHUNT_DARK}]">${escapeHtml(statsLabel)}</span>
+        <span class="px-2.5 py-1 rounded-md bg-[${colors.PRODUCTHUNT_LIGHT || '#FFF5F4'}] dark:bg-[${colors.PRODUCTHUNT || '#FF5A50'}]/10 text-sm font-medium text-[${colors.PRODUCTHUNT || '#FF5A50'}] dark:text-[${colors.PRODUCTHUNT_DARK || '#FF6B60'}]">${escapeHtml(statsLabel)}</span>
         <span id="total-count" class="font-semibold text-gray-900 dark:text-white">${escapeHtml(totalCount)}</span>
         <span>${escapeHtml(t.page.items)}</span>
       </span>`;
@@ -170,7 +204,7 @@ const languageConfig = clientTranslations[safeLocale].language;
   // ==================== 主逻辑 ====================
   
   const translations = clientTranslations;
-  const i18nUpdater = new I18nUpdater(translations);
+  const i18nUpdater = new I18nUpdater(translations, COLORS);
   
   // 切换语言
   function toggleLanguage() {
@@ -189,6 +223,14 @@ const languageConfig = clientTranslations[safeLocale].language;
       setTimeout(initLanguageToggle, 100);
       return;
     }
+    
+    // 如果已经绑定过事件，跳过
+    if (languageToggle._i18nInitialized) {
+      return;
+    }
+    
+    // 标记为已初始化
+    languageToggle._i18nInitialized = true;
     
     // 显示当前语言
     const locale = getClientLocale();

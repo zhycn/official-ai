@@ -73,7 +73,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
 </Layout>
 
 <script define:vars={{ toolsData, ITEMS_PER_PAGE, SEARCH_DEBOUNCE_MS, FUSE_SEARCH_LIMIT, FUSE_SEARCH_THRESHOLD, DOM_IDS, COLORS, translationsJSON }}>
-  // ==================== 工具函数 ====================
+  // ==================== 客户端 i18n 工具函数（统一实现）====================
   
   // HTML 转义函数
   function escapeHtml(text) {
@@ -84,30 +84,65 @@ const initialTools = toolsData.slice(startIndex, endIndex);
   }
   
   // 获取当前语言（客户端）
+  // 优先级：localStorage > Cookie > navigator.language > 默认值(zh)
   function getClientLocale() {
+    if (typeof window === 'undefined') return 'zh';
     try {
+      // 1. 优先从 localStorage 读取
       const saved = localStorage.getItem('locale');
       if (saved === 'zh' || saved === 'en') {
         return saved;
       }
-      const browserLang = navigator.language || navigator.userLanguage;
+      
+      // 2. 如果 localStorage 没有，尝试从 Cookie 读取（同步服务端状态）
+      const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+        const [key, value] = cookie.trim().split('=');
+        if (key) {
+          try {
+            acc[decodeURIComponent(key)] = decodeURIComponent(value || '');
+          } catch (e) {
+            acc[key] = value || '';
+          }
+        }
+        return acc;
+      }, {});
+      
+      if (cookies.locale === 'zh' || cookies.locale === 'en') {
+        // 同步到 localStorage
+        localStorage.setItem('locale', cookies.locale);
+        return cookies.locale;
+      }
+      
+      // 3. 从浏览器语言检测
+      const browserLang = navigator.language || navigator.userLanguage || '';
       if (browserLang.startsWith('zh')) return 'zh';
       if (browserLang.startsWith('en')) return 'en';
     } catch (e) {
-      // localStorage 不可用时使用默认值
+      // localStorage/Cookie 不可用时使用默认值
     }
     return 'zh';
   }
   
   // 设置语言（客户端）
+  // 同时设置 localStorage 和 Cookie，确保服务端和客户端一致
   function setClientLocale(locale) {
+    if (typeof window === 'undefined') return;
     try {
+      // 1. 设置 localStorage（客户端持久化）
       localStorage.setItem('locale', locale);
+      
+      // 2. 设置 Cookie（服务端可读取，避免刷新闪烁）
+      document.cookie = `locale=${locale}; path=/; max-age=31536000; SameSite=Lax`;
+      
+      // 3. 更新 HTML lang 属性
+      document.documentElement.lang = locale === 'zh' ? 'zh-CN' : 'en';
+      
+      // 4. 触发全局语言变更事件（供页面监听）
       window.dispatchEvent(new CustomEvent('localechange', { 
         detail: { locale } 
       }));
     } catch (e) {
-      // localStorage 不可用时忽略
+      // localStorage/Cookie 不可用时忽略
     }
   }
   
@@ -127,36 +162,11 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     return typeof value === 'string' ? value : key;
   }
   
-  // 获取 URL 参数（数字类型）
-  function getURLParamNumber(name) {
-    const urlParams = new URLSearchParams(window.location.search);
-    const value = urlParams.get(name);
-    return value ? parseInt(value, 10) : null;
-  }
-  
-  // 更新 URL 参数（不刷新页面）
-  function updateURLParam(name, value) {
-    const url = new URL(window.location.href);
-    if (value === null || value === undefined || value === '' || value === 1) {
-      url.searchParams.delete(name);
-    } else {
-      url.searchParams.set(name, String(value));
-    }
-    window.history.pushState({ [name]: value }, '', url);
-  }
-  
-  // 日志工具（开发环境）
-  const isDev = typeof window !== 'undefined' && window.location.hostname === 'localhost';
-  const logger = {
-    log: (...args) => { if (isDev) console.log('[Official AI]', ...args); },
-    error: (...args) => { if (isDev) console.error('[Official AI]', ...args); },
-    warn: (...args) => { if (isDev) console.warn('[Official AI]', ...args); },
-  };
-  
-  // ==================== 国际化更新器类 ====================
+  // 国际化更新器类
   class I18nUpdater {
-    constructor(translations) {
+    constructor(translations, colors) {
       this.translations = translations;
+      this.colors = colors || {};
     }
     
     updateAll(locale) {
@@ -198,8 +208,9 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       const statsLabel = isSearching ? t.page.statsSearch : t.page.stats;
       const totalCount = total !== undefined ? String(total) : (document.getElementById('total-count')?.textContent || '0');
       
+      const colors = this.colors;
       statsText.innerHTML = `<span class="inline-flex items-center gap-2">
-        <span class="px-2.5 py-1 rounded-md bg-[${COLORS.PRODUCTHUNT_LIGHT}] dark:bg-[${COLORS.PRODUCTHUNT}]/10 text-sm font-medium text-[${COLORS.PRODUCTHUNT}] dark:text-[${COLORS.PRODUCTHUNT_DARK}]">${escapeHtml(statsLabel)}</span>
+        <span class="px-2.5 py-1 rounded-md bg-[${colors.PRODUCTHUNT_LIGHT || '#FFF5F4'}] dark:bg-[${colors.PRODUCTHUNT || '#FF5A50'}]/10 text-sm font-medium text-[${colors.PRODUCTHUNT || '#FF5A50'}] dark:text-[${colors.PRODUCTHUNT_DARK || '#FF6B60'}]">${escapeHtml(statsLabel)}</span>
         <span id="total-count" class="font-semibold text-gray-900 dark:text-white">${escapeHtml(totalCount)}</span>
         <span>${escapeHtml(t.page.items)}</span>
       </span>`;
@@ -254,6 +265,32 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       }
     }
   }
+  
+  // 获取 URL 参数（数字类型）
+  function getURLParamNumber(name) {
+    const urlParams = new URLSearchParams(window.location.search);
+    const value = urlParams.get(name);
+    return value ? parseInt(value, 10) : null;
+  }
+  
+  // 更新 URL 参数（不刷新页面）
+  function updateURLParam(name, value) {
+    const url = new URL(window.location.href);
+    if (value === null || value === undefined || value === '' || value === 1) {
+      url.searchParams.delete(name);
+    } else {
+      url.searchParams.set(name, String(value));
+    }
+    window.history.pushState({ [name]: value }, '', url);
+  }
+  
+  // 日志工具（开发环境）
+  const isDev = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+  const logger = {
+    log: (...args) => { if (isDev) console.log('[Official AI]', ...args); },
+    error: (...args) => { if (isDev) console.error('[Official AI]', ...args); },
+    warn: (...args) => { if (isDev) console.warn('[Official AI]', ...args); },
+  };
   
   // ==================== 搜索管理器类 ====================
   class SearchManager {
@@ -413,8 +450,8 @@ const initialTools = toolsData.slice(startIndex, endIndex);
   // 初始化搜索管理器
   const searchManager = new SearchManager(toolsData, translations);
   
-  // 初始化国际化更新器
-  const i18nUpdater = new I18nUpdater(translations);
+  // 初始化国际化更新器（传入 COLORS 用于样式）
+  const i18nUpdater = new I18nUpdater(translations, COLORS);
   
   // 获取翻译函数（客户端）
   function t(key) {
@@ -1011,6 +1048,15 @@ const initialTools = toolsData.slice(startIndex, endIndex);
   // 初始化
   document.addEventListener('DOMContentLoaded', async () => {
     logger.log('DOMContentLoaded - Initializing...');
+    
+    // 检查并同步语言（如果服务端和客户端不一致，立即更新）
+    const clientLocale = getClientLocale();
+    if (clientLocale !== locale) {
+      // 客户端语言与服务端不一致，立即更新页面
+      i18nUpdater.updateAll(clientLocale);
+      // 更新 HTML lang 属性（setClientLocale 已处理，这里确保同步）
+      document.documentElement.lang = clientLocale === 'zh' ? 'zh-CN' : 'en';
+    }
     
     // 初始化搜索管理器
     await searchManager.init();

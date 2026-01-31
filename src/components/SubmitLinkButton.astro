@@ -17,9 +17,37 @@ const href = 'https://github.com/zhycn/official-ai/issues';
 </a>
 
 <script define:vars={{ clientTranslations }}>
-    // 获取当前语言
-    function getLocale() {
-      return localStorage.getItem('locale') || 'zh';
+    // ==================== 客户端 i18n 工具函数（内联版本）====================
+    
+    // 获取当前语言（客户端）
+    function getClientLocale() {
+      if (typeof window === 'undefined') return 'zh';
+      try {
+        const saved = localStorage.getItem('locale');
+        if (saved === 'zh' || saved === 'en') {
+          return saved;
+        }
+        const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+          const [key, value] = cookie.trim().split('=');
+          if (key) {
+            try {
+              acc[decodeURIComponent(key)] = decodeURIComponent(value || '');
+            } catch (e) {
+              acc[key] = value || '';
+            }
+          }
+          return acc;
+        }, {});
+        if (cookies.locale === 'zh' || cookies.locale === 'en') {
+          localStorage.setItem('locale', cookies.locale);
+          return cookies.locale;
+        }
+        const browserLang = navigator.language || navigator.userLanguage || '';
+        if (browserLang.startsWith('zh')) return 'zh';
+        if (browserLang.startsWith('en')) return 'en';
+      } catch (e) {
+      }
+      return 'zh';
     }
     
     // 更新提交链接文本
@@ -33,13 +61,13 @@ const href = 'https://github.com/zhycn/official-ai/issues';
     
     // 监听语言变更事件
     window.addEventListener('localechange', function(e) {
-      const locale = (e.detail && e.detail.locale) ? e.detail.locale : getLocale();
+      const locale = (e.detail && e.detail.locale) ? e.detail.locale : getClientLocale();
       updateSubmitLinkText(locale);
     });
     
     // 初始化时更新文本（处理客户端渲染）
     if (typeof window !== 'undefined') {
-      updateSubmitLinkText(getLocale());
+      updateSubmitLinkText(getClientLocale());
     }
   </script>
   

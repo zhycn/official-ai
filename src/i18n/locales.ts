@@ -72,6 +72,8 @@ export const translations: Record<Locale, Translations> = {
       placeholder: '搜索 AI 工具...',
       noResults: '未找到匹配的工具',
       clear: '清除搜索',
+      toggle: '搜索',
+      suggestions: '搜索建议',
     },
     theme: {
       light: '亮色',
@@ -312,9 +314,21 @@ export function t(key: string, locale?: Locale): string {
 export function setLocale(locale: Locale) {
   if (typeof window === 'undefined') return;
 
-  localStorage.setItem('locale', locale);
-  // 触发全局语言变更事件（供页面监听）
-  window.dispatchEvent(new CustomEvent('localechange', { detail: { locale } }));
+  try {
+    // 1. 设置 localStorage（客户端持久化）
+    localStorage.setItem('locale', locale);
+    
+    // 2. 设置 Cookie（服务端可读取，避免刷新闪烁）
+    document.cookie = `locale=${locale}; path=/; max-age=31536000; SameSite=Lax`;
+    
+    // 3. 更新 HTML lang 属性
+    document.documentElement.lang = locale === 'zh' ? 'zh-CN' : 'en';
+    
+    // 4. 触发全局语言变更事件（供页面监听）
+    window.dispatchEvent(new CustomEvent('localechange', { detail: { locale } }));
+  } catch (e) {
+    // localStorage/Cookie 不可用时忽略
+  }
 }
 
 

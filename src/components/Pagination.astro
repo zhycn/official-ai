@@ -35,18 +35,35 @@ const locale = getLocaleFromAstro();
 </div>
 
 <script define:vars={{ clientTranslations }}>
+  // ==================== 客户端 i18n 工具函数（内联版本）====================
+  
   // 获取当前语言（客户端）
   function getClientLocale() {
+    if (typeof window === 'undefined') return 'zh';
     try {
       const saved = localStorage.getItem('locale');
       if (saved === 'zh' || saved === 'en') {
         return saved;
       }
-      const browserLang = navigator.language || navigator.userLanguage;
+      const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+        const [key, value] = cookie.trim().split('=');
+        if (key) {
+          try {
+            acc[decodeURIComponent(key)] = decodeURIComponent(value || '');
+          } catch (e) {
+            acc[key] = value || '';
+          }
+        }
+        return acc;
+      }, {});
+      if (cookies.locale === 'zh' || cookies.locale === 'en') {
+        localStorage.setItem('locale', cookies.locale);
+        return cookies.locale;
+      }
+      const browserLang = navigator.language || navigator.userLanguage || '';
       if (browserLang.startsWith('zh')) return 'zh';
       if (browserLang.startsWith('en')) return 'en';
     } catch (e) {
-      // localStorage 不可用时使用默认值
     }
     return 'zh';
   }
@@ -59,7 +76,7 @@ const locale = getLocaleFromAstro();
     return div.innerHTML;
   }
   
-  // 国际化更新器类
+  // 国际化更新器类（简化版，只用于分页）
   class I18nUpdater {
     constructor(translations) {
       this.translations = translations;
