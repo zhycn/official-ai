@@ -9,6 +9,16 @@ const copyright = 'Official AI';
     <li>
         <span class="text-gray-500 dark:text-gray-400">©</span>
         <span class="text-gray-500 dark:text-gray-400">{year}</span> 
-        <a href="/" class={`text-gray-500 dark:text-gray-400 hover:text-[${COLORS.PRODUCTHUNT}] dark:hover:text-[${COLORS.PRODUCTHUNT}]`}>{copyright}</a>
+        <a href="/" class="copyright-link text-gray-500 dark:text-gray-400">{copyright}</a>
     </li>
 </ul>
+
+<style>
+  .copyright-link:hover {
+    color: #FF5A50;
+  }
+  
+  .dark .copyright-link:hover {
+    color: #FF5A50;
+  }
+</style>

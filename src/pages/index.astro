@@ -72,7 +72,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
   </div>
 </Layout>
 
-<script define:vars={{ toolsData, ITEMS_PER_PAGE, SEARCH_DEBOUNCE_MS, FUSE_SEARCH_LIMIT, FUSE_SEARCH_THRESHOLD, DOM_IDS, COLORS, translationsJSON }}>
+<script define:vars={{ toolsData, ITEMS_PER_PAGE, SEARCH_DEBOUNCE_MS, FUSE_SEARCH_LIMIT, FUSE_SEARCH_THRESHOLD, DOM_IDS, COLORS, translationsJSON, locale }}>
   // ==================== 客户端 i18n 工具函数（统一实现）====================
   
   // HTML 转义函数
@@ -758,14 +758,16 @@ const initialTools = toolsData.slice(startIndex, endIndex);
             id="suggestion-${index}"
             tabindex="${index === selectedIndex ? '0' : '-1'}"
           >
-            <div class="suggestion-icon" aria-hidden="true">
-              <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-              </svg>
+            <div class="suggestion-content">
+              <div class="suggestion-icon" aria-hidden="true">
+                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+              </div>
+              <span class="suggestion-title text-gray-900 dark:text-gray-100">
+                ${searchManager.highlightText(tool.name, query)}
+              </span>
             </div>
-            <span class="suggestion-title text-gray-900 dark:text-gray-100">
-              ${searchManager.highlightText(tool.name, query)}
-            </span>
           </div>
         `
           )

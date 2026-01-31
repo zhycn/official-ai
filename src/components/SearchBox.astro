@@ -25,7 +25,7 @@ const suggestionsListId = `${idPrefix}suggestions-list`;
   <div class="relative group">
     <!-- 搜索图标 -->
     <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none z-10">
-      <svg class={`h-5 w-5 text-gray-400 dark:text-gray-500 group-focus-within:text-[${COLORS.PRODUCTHUNT}] dark:group-focus-within:text-[${COLORS.PRODUCTHUNT_DARK}] transition-colors duration-200`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <svg class="search-icon h-5 w-5 text-gray-400 dark:text-gray-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
       </svg>
     </div>
@@ -34,10 +34,10 @@ const suggestionsListId = `${idPrefix}suggestions-list`;
     <input
       id={inputId}
       name="search"
-      type="search"
+      type="text"
       placeholder={placeholder}
       autocomplete="off"
-      class="search-input block w-full pl-12 pr-20 sm:pr-24 py-3 text-sm sm:text-base border-0 rounded-full bg-gray-100 dark:bg-gray-800/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none focus:bg-white dark:focus:bg-gray-800 transition-all duration-200"
+      class="search-input block w-full pl-12 pr-20 sm:pr-24 py-3 text-sm sm:text-base border-0 rounded-full bg-gray-100 dark:bg-gray-800/50 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:outline-none transition-all duration-200"
     />
     
     <!-- 右侧操作区 -->
@@ -131,7 +131,7 @@ const suggestionsListId = `${idPrefix}suggestions-list`;
     outline-color: rgba(255, 107, 96, 0.3); /* #FF6B60 with 30% opacity */
   }
   
-  /* 简化的搜索建议项布局 */
+  /* 搜索建议项布局 - 图标在前，文字在后 */
   .suggestion-content {
     display: flex;
     align-items: center;
@@ -148,24 +148,12 @@ const suggestionsListId = `${idPrefix}suggestions-list`;
     justify-content: center;
   }
   
-  .suggestion-text {
+  .suggestion-title {
     flex: 1;
     min-width: 0;
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-  }
-  
-  .suggestion-title {
     font-size: 14px;
     line-height: 1.4;
     font-weight: 400;
-  }
-  
-  .suggestion-description {
-    font-size: 12px;
-    line-height: 1.3;
-    opacity: 0.7;
   }
   
   .highlight {
@@ -192,10 +180,10 @@ const suggestionsListId = `${idPrefix}suggestions-list`;
     box-shadow: 0 2px 8px rgba(32, 33, 36, 0.3);
   }
   
-  /* 浅色主题聚焦样式 */
+  /* 浅色主题聚焦样式 - ProductHunt 橙色 */
   .search-input:focus,
   .search-input:focus-visible {
-    box-shadow: 0 2px 8px rgba(32, 33, 36, 0.3) !important;
+    box-shadow: 0 2px 8px rgba(255, 90, 80, 0.25) !important;
     background-color: white !important;
     color: rgb(17, 24, 39) !important;
     outline: none !important;
@@ -211,16 +199,6 @@ const suggestionsListId = `${idPrefix}suggestions-list`;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
   }
   
-  /* 浅色主题聚焦样式 - ProductHunt 橙色 */
-  .search-input:focus,
-  .search-input:focus-visible {
-    box-shadow: 0 2px 8px rgba(255, 90, 80, 0.25) !important;
-    background-color: white !important;
-    color: rgb(17, 24, 39) !important;
-    outline: none !important;
-    border: none !important;
-  }
-  
   /* 深色主题聚焦样式 - ProductHunt 橙色 */
   .dark .search-input:focus,
   .dark .search-input:focus-visible {
@@ -233,5 +211,14 @@ const suggestionsListId = `${idPrefix}suggestions-list`;
   
   .dark .search-input:focus::placeholder {
     color: rgb(156, 163, 175) !important;
+  }
+  
+  /* 搜索图标聚焦时变色 */
+  .group:focus-within .search-icon {
+    color: #FF5A50;
+  }
+  
+  .dark .group:focus-within .search-icon {
+    color: #FF6B60;
   }
 </style>

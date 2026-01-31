@@ -84,6 +84,7 @@ export const translations: Record<Locale, Translations> = {
     page: {
       title: 'AI Tools',
       subtitle: 'Go official. Skip the noise.',
+      metaTitle: 'Official AI - 官方 AI 工具导航',
       stats: '已收录',
       statsSearch: '找到',
       items: '项',
