@@ -1,8 +1,9 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { getLocaleFromRequest, t, clientTranslations } from '../i18n/locales';
+import { getLocaleFromAstro, t, clientTranslations } from '../i18n/locales';
 
-const locale = getLocaleFromRequest(Astro.request);
+// 使用安全函数获取语言，避免在预渲染模式下访问 Astro.request
+const locale = getLocaleFromAstro();
 ---
 
 <Layout title={`404 - ${t('notFound.title', locale)}`}>
@@ -56,15 +57,44 @@ const locale = getLocaleFromRequest(Astro.request);
 </Layout>
 
 <script define:vars={{ clientTranslations }}>
-  // 获取当前语言
-  function getLocale() {
-    return localStorage.getItem('locale') || 'zh';
+  // ==================== 客户端 i18n 工具函数（内联版本）====================
+  
+  // 获取当前语言（客户端）
+  function getClientLocale() {
+    if (typeof window === 'undefined') return 'zh';
+    try {
+      const saved = localStorage.getItem('locale');
+      if (saved === 'zh' || saved === 'en') {
+        return saved;
+      }
+      const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+        const [key, value] = cookie.trim().split('=');
+        if (key) {
+          try {
+            acc[decodeURIComponent(key)] = decodeURIComponent(value || '');
+          } catch (e) {
+            acc[key] = value || '';
+          }
+        }
+        return acc;
+      }, {});
+      if (cookies.locale === 'zh' || cookies.locale === 'en') {
+        localStorage.setItem('locale', cookies.locale);
+        return cookies.locale;
+      }
+      const browserLang = navigator.language || navigator.userLanguage || '';
+      if (browserLang.startsWith('zh')) return 'zh';
+      if (browserLang.startsWith('en')) return 'en';
+    } catch (e) {
+    }
+    return 'zh';
   }
   
   // 更新页面文本
   function updatePageText(locale) {
-    // @ts-ignore - locale is a valid key
-    const notFound = clientTranslations[locale]?.notFound || clientTranslations['zh'].notFound;
+    // 确保 locale 是有效的键
+    const validLocale = (locale === 'zh' || locale === 'en') ? locale : 'zh';
+    const notFound = clientTranslations[validLocale]?.notFound || clientTranslations['zh'].notFound;
     
     const titleEl = document.getElementById('not-found-title');
     const descEl = document.getElementById('not-found-description');
@@ -82,13 +112,16 @@ const locale = getLocaleFromRequest(Astro.request);
   
   // 监听语言变更事件
   window.addEventListener('localechange', function(e) {
-    // @ts-ignore - CustomEvent detail property
-    const locale = (e.detail && e.detail.locale) ? e.detail.locale : getLocale();
+    // 类型安全的 CustomEvent detail 访问
+    const event = e instanceof CustomEvent ? e : null;
+    const locale = (event?.detail?.locale === 'zh' || event?.detail?.locale === 'en') 
+      ? event.detail.locale 
+      : getClientLocale();
     updatePageText(locale);
   });
   
   // 初始化时更新文本（处理客户端渲染）
   if (typeof window !== 'undefined') {
-    updatePageText(getLocale());
+    updatePageText(getClientLocale());
   }
 </script>

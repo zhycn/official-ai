@@ -5,13 +5,13 @@ import ToolCard from '../components/ToolCard.astro';
 import Pagination from '../components/Pagination.astro';
 import Footer from '../components/Footer.astro';
 import toolsData from '../../public/data/tools.json';
-import { getLocaleFromRequest, t, clientTranslations } from '../i18n/locales';
+import { getLocaleFromAstro, t, clientTranslations } from '../i18n/locales';
+import { ITEMS_PER_PAGE, SEARCH_DEBOUNCE_MS, FUSE_SEARCH_LIMIT, FUSE_SEARCH_THRESHOLD, DOM_IDS, COLORS } from '../utils/constants';
 
 // 将翻译对象序列化为 JSON，以便在客户端使用
 const translationsJSON = JSON.stringify(clientTranslations);
-
-const ITEMS_PER_PAGE = 24;
-const locale = getLocaleFromRequest(Astro.request);
+// 使用安全函数获取语言，避免在预渲染模式下访问 Astro.request
+const locale = getLocaleFromAstro();
 
 // 从 URL 读取页码（服务端）
 const urlPageParam = Astro.url.searchParams.get('page');
@@ -23,22 +23,22 @@ const endIndex = startIndex + ITEMS_PER_PAGE;
 const initialTools = toolsData.slice(startIndex, endIndex);
 ---
 
-<Layout title="Skills - skill0">
+<Layout title={t('page.metaTitle', locale)}>
   <div class="min-h-screen flex flex-col bg-white dark:bg-gray-900">
     <Navbar />
     
-    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12 lg:py-16 w-full">
+    <main class="flex-1 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8 lg:py-10 w-full">
       <!-- 标题信息 -->
-      <div class="mb-8 sm:mb-12">
-        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-3 sm:mb-4 tracking-tight leading-tight">
+      <div class="mb-6 sm:mb-8">
+        <h1 class="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 dark:text-white mb-2 sm:mb-3 tracking-tight leading-tight">
           {t('page.title', locale)}
         </h1>
-        <p class="text-sm sm:text-base text-gray-500 dark:text-gray-400 mb-4 sm:mb-5 italic font-light">
+        <p class="text-sm sm:text-base text-gray-500 dark:text-gray-400 mb-3 sm:mb-4 italic font-light">
           {t('page.subtitle', locale)}
         </p>
         <p class="text-base sm:text-lg text-gray-600 dark:text-gray-400 leading-relaxed">
           <span id="stats-text" class="inline-flex items-center gap-2">
-            <span class="px-2.5 py-1 rounded-md bg-[#FFF5F4] dark:bg-[#FF5A50]/10 text-sm font-medium text-[#FF5A50] dark:text-[#FF6B60]">
+            <span class="stats-badge px-2.5 py-1 rounded-md text-sm font-medium">
               {t('page.stats', locale)}
             </span>
             <span id="total-count" class="font-semibold text-gray-900 dark:text-white">{toolsData.length}</span>
@@ -48,7 +48,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       </div>
 
       <!-- 工具卡片列表 -->
-      <div id="tools-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5 lg:gap-6 mb-10 sm:mb-12">
+      <div id="tools-container" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 sm:gap-4 lg:gap-5 mb-8 sm:mb-10">
         {initialTools.map((tool) => (
           <ToolCard
             id={tool.id}
@@ -72,24 +72,105 @@ const initialTools = toolsData.slice(startIndex, endIndex);
   </div>
 </Layout>
 
-<script define:vars={{ toolsData, ITEMS_PER_PAGE, translationsJSON }}>
-  // 使用从 locales.ts 导入的翻译
-  const translations = JSON.parse(translationsJSON);
+<script define:vars={{ toolsData, ITEMS_PER_PAGE, SEARCH_DEBOUNCE_MS, FUSE_SEARCH_LIMIT, FUSE_SEARCH_THRESHOLD, DOM_IDS, COLORS, translationsJSON, locale }}>
+  // ==================== 主题颜色工具函数 ====================
   
-  // 获取当前语言
-  function getLocale() {
-    return localStorage.getItem('locale') || 'zh';
+  // 获取 CSS 变量值（用于动态 HTML）
+  function getCSSVar(varName) {
+    return getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
   }
   
-  // 获取翻译（支持嵌套键，如 'page.stats'）
-  function t(key) {
-    const locale = getLocale();
+  // 获取主题颜色（用于内联样式）
+  const themeColors = {
+    primary: '#FF5A50',
+    primaryDark: '#FF6B60',
+    primaryHover: '#E84A3F',
+    primaryLight: '#FFF5F4',
+    primaryLightDark: 'rgba(255, 90, 80, 0.1)',
+  };
+  
+  // ==================== 客户端 i18n 工具函数（统一实现）====================
+  
+  // HTML 转义函数
+  function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+  }
+  
+  // 获取当前语言（客户端）
+  // 优先级：localStorage > Cookie > navigator.language > 默认值(zh)
+  function getClientLocale() {
+    if (typeof window === 'undefined') return 'zh';
+    try {
+      // 1. 优先从 localStorage 读取
+      const saved = localStorage.getItem('locale');
+      if (saved === 'zh' || saved === 'en') {
+        return saved;
+      }
+      
+      // 2. 如果 localStorage 没有，尝试从 Cookie 读取（同步服务端状态）
+      const cookies = document.cookie.split(';').reduce((acc, cookie) => {
+        const [key, value] = cookie.trim().split('=');
+        if (key) {
+          try {
+            acc[decodeURIComponent(key)] = decodeURIComponent(value || '');
+          } catch (e) {
+            acc[key] = value || '';
+          }
+        }
+        return acc;
+      }, {});
+      
+      if (cookies.locale === 'zh' || cookies.locale === 'en') {
+        // 同步到 localStorage
+        localStorage.setItem('locale', cookies.locale);
+        return cookies.locale;
+      }
+      
+      // 3. 从浏览器语言检测
+      const browserLang = navigator.language || navigator.userLanguage || '';
+      if (browserLang.startsWith('zh')) return 'zh';
+      if (browserLang.startsWith('en')) return 'en';
+    } catch (e) {
+      // localStorage/Cookie 不可用时使用默认值
+    }
+    return 'zh';
+  }
+  
+  // 设置语言（客户端）
+  // 同时设置 localStorage 和 Cookie，确保服务端和客户端一致
+  function setClientLocale(locale) {
+    if (typeof window === 'undefined') return;
+    try {
+      // 1. 设置 localStorage（客户端持久化）
+      localStorage.setItem('locale', locale);
+      
+      // 2. 设置 Cookie（服务端可读取，避免刷新闪烁）
+      document.cookie = `locale=${locale}; path=/; max-age=31536000; SameSite=Lax`;
+      
+      // 3. 更新 HTML lang 属性
+      document.documentElement.lang = locale === 'zh' ? 'zh-CN' : 'en';
+      
+      // 4. 触发全局语言变更事件（供页面监听）
+      window.dispatchEvent(new CustomEvent('localechange', { 
+        detail: { locale } 
+      }));
+    } catch (e) {
+      // localStorage/Cookie 不可用时忽略
+    }
+  }
+  
+  // 客户端翻译函数
+  function tClient(key, translations, locale) {
+    const currentLocale = locale || getClientLocale();
     const keys = key.split('.');
-    let value = translations[locale];
+    let value = translations[currentLocale];
     
     for (const k of keys) {
       if (value == null || typeof value !== 'object') {
-        return key;
+        break;
       }
       value = value[k];
     }
@@ -97,142 +178,353 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     return typeof value === 'string' ? value : key;
   }
   
-  // 使用动态导入加载 Fuse.js
-  let Fuse;
-  let currentPage = 1;
-  let filteredTools = [...toolsData];
-  let fuse;
-
-  // 获取 URL 参数
-  function getURLParam(name) {
+  // 国际化更新器类
+  class I18nUpdater {
+    constructor(translations, colors) {
+      this.translations = translations;
+      this.colors = colors || {};
+    }
+    
+    updateAll(locale) {
+      const t = this.translations[locale] || this.translations['zh'];
+      
+      // 更新搜索框占位符
+      const searchInput = document.getElementById('search-input');
+      if (searchInput && searchInput.tagName === 'INPUT') {
+        searchInput.placeholder = t.search.placeholder;
+      }
+      
+      // 更新清除按钮
+      const clearBtn = document.getElementById('search-clear');
+      if (clearBtn) {
+        clearBtn.setAttribute('aria-label', t.search.clear);
+      }
+      
+      // 更新统计信息
+      this.updateStats(locale);
+      
+      // 更新分页文本
+      this.updatePagination(locale);
+      
+      // 更新空状态文本
+      this.updateEmptyState(locale);
+      
+      // 更新提交按钮
+      const submitBtn = document.querySelector('[data-i18n="nav.submit"]');
+      if (submitBtn) {
+        submitBtn.textContent = t.nav.submit;
+      }
+    }
+    
+    updateStats(locale, total, isSearching = false) {
+      const statsText = document.getElementById('stats-text');
+      if (!statsText) return;
+      
+      const t = this.translations[locale] || this.translations['zh'];
+      const statsLabel = isSearching ? t.page.statsSearch : t.page.stats;
+      const totalCount = total !== undefined ? String(total) : (document.getElementById('total-count')?.textContent || '0');
+      
+      const colors = this.colors;
+      statsText.innerHTML = `<span class="inline-flex items-center gap-2">
+        <span class="px-2.5 py-1 rounded-md bg-[${colors.PRODUCTHUNT_LIGHT || '#FFF5F4'}] dark:bg-[${colors.PRODUCTHUNT || '#FF5A50'}]/10 text-sm font-medium text-[${colors.PRODUCTHUNT || '#FF5A50'}] dark:text-[${colors.PRODUCTHUNT_DARK || '#FF6B60'}]">${escapeHtml(statsLabel)}</span>
+        <span id="total-count" class="font-semibold text-gray-900 dark:text-white">${escapeHtml(totalCount)}</span>
+        <span>${escapeHtml(t.page.items)}</span>
+      </span>`;
+    }
+    
+    updatePagination(locale) {
+      const t = this.translations[locale] || this.translations['zh'];
+      
+      const pageInfo = document.getElementById('pagination-page-info');
+      if (pageInfo) {
+        const match = pageInfo.textContent?.match(/(\d+)\s*\/\s*(\d+)/);
+        if (match) {
+          pageInfo.innerHTML = `${escapeHtml(t.pagination.page)} <span class="font-semibold text-gray-900 dark:text-white">${match[1]}</span> / <span class="font-semibold text-gray-900 dark:text-white">${match[2]}</span>`;
+        }
+      }
+      
+      const prevText = document.getElementById('prev-page-text');
+      if (prevText) {
+        prevText.textContent = t.pagination.prev;
+      }
+      
+      const nextText = document.getElementById('next-page-text');
+      if (nextText) {
+        nextText.textContent = t.pagination.next;
+      }
+    }
+    
+    updateEmptyState(locale) {
+      const messageEl = document.getElementById('empty-state-message');
+      const descEl = document.getElementById('empty-state-description');
+      
+      if (messageEl && descEl) {
+        const t = this.translations[locale] || this.translations['zh'];
+        messageEl.textContent = t.emptyState.message;
+        descEl.textContent = t.emptyState.description;
+      }
+    }
+    
+    updateLanguageDisplay(locale) {
+      const t = this.translations[locale] || this.translations['zh'];
+      const languageConfig = t.language;
+      
+      const display = document.getElementById('language-display');
+      if (display) {
+        display.textContent = languageConfig.display[locale] || languageConfig.display.zh;
+      }
+      
+      const button = document.getElementById('language-toggle');
+      if (button) {
+        button.setAttribute('title', languageConfig.toggle);
+        button.setAttribute('aria-label', languageConfig.ariaLabel);
+      }
+    }
+  }
+  
+  // 获取 URL 参数（数字类型）
+  function getURLParamNumber(name) {
     const urlParams = new URLSearchParams(window.location.search);
     const value = urlParams.get(name);
     return value ? parseInt(value, 10) : null;
   }
-
+  
   // 更新 URL 参数（不刷新页面）
   function updateURLParam(name, value) {
-    const url = new URL(window.location);
-    if (value === null || value === undefined || value === 1) {
-      // 如果是第一页或无效值，移除参数
+    const url = new URL(window.location.href);
+    if (value === null || value === undefined || value === '' || value === 1) {
       url.searchParams.delete(name);
     } else {
-      url.searchParams.set(name, value.toString());
+      url.searchParams.set(name, String(value));
     }
-    window.history.pushState({ page: value }, '', url);
+    window.history.pushState({ [name]: value }, '', url);
   }
-
-  // HTML 转义函数
-  function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-  }
-
-  // 加载 Fuse.js（使用 CDN）
-  function loadFuseJS() {
-    return new Promise((resolve, reject) => {
-      // 检查是否已经加载
+  
+  // 日志工具（开发环境）
+  const isDev = typeof window !== 'undefined' && window.location.hostname === 'localhost';
+  const logger = {
+    log: (...args) => { if (isDev) console.log('[Official AI]', ...args); },
+    error: (...args) => { if (isDev) console.error('[Official AI]', ...args); },
+    warn: (...args) => { if (isDev) console.warn('[Official AI]', ...args); },
+    debug: (...args) => { if (isDev) console.debug('[Official AI]', ...args); },
+  };
+  
+  // ==================== 搜索管理器类 ====================
+  class SearchManager {
+    constructor(toolsData, translations) {
+      this.toolsData = toolsData;
+      this.translations = translations;
+      this.fuse = null;
+      this.isInitialized = false;
+      this.initPromise = null;
+      this.fuseLoadPromise = null;
+    }
+    
+    /**
+     * 加载 Fuse.js（使用 CDN）
+     */
+    async loadFuse() {
+      // 如果已经加载，直接返回
       if (window.Fuse) {
-        resolve(window.Fuse);
-        return;
+        return window.Fuse;
       }
-
-      // 检查是否正在加载
-      if (window.__fuseLoading) {
-        window.__fuseLoading.then(() => {
-          if (window.Fuse) {
-            resolve(window.Fuse);
-          } else {
-            reject(new Error('Fuse.js not available'));
-          }
-        }).catch(reject);
-        return;
+      
+      // 如果正在加载，等待加载完成
+      if (this.fuseLoadPromise) {
+        return this.fuseLoadPromise;
       }
-
+      
       // 创建加载 Promise
-      window.__fuseLoading = new Promise((loadResolve, loadReject) => {
+      this.fuseLoadPromise = new Promise((resolve, reject) => {
+        // 检查是否已经通过 script 标签加载
+        if (window.Fuse) {
+          resolve(window.Fuse);
+          return;
+        }
+        
+        // 创建 script 标签加载 Fuse.js
         const script = document.createElement('script');
         script.src = 'https://cdn.jsdelivr.net/npm/fuse.js@7.1.0/dist/fuse.min.js';
         script.async = true;
-        script.crossOrigin = 'anonymous';
-        
-        const timeout = setTimeout(() => {
-          loadReject(new Error('Fuse.js loading timeout'));
-        }, 10000); // 10秒超时
-        
         script.onload = () => {
-          clearTimeout(timeout);
-          // 等待一下确保 Fuse 已经挂载到 window
-          setTimeout(() => {
-            if (window.Fuse) {
-              loadResolve(window.Fuse);
-            } else {
-              loadReject(new Error('Fuse.js loaded but not available on window'));
-            }
-          }, 100);
-        };
-        
-        script.onerror = () => {
-          clearTimeout(timeout);
-          loadReject(new Error('Failed to load Fuse.js from CDN'));
-        };
-        
-        document.head.appendChild(script);
-      });
-
-      window.__fuseLoading
-        .then(() => {
           if (window.Fuse) {
             resolve(window.Fuse);
           } else {
-            reject(new Error('Fuse.js not available'));
+            reject(new Error('Fuse.js loaded but not available on window'));
           }
-        })
-        .catch(reject);
-    });
-  }
-
-  // 初始化 Fuse.js
-  async function initFuse() {
-    try {
-      Fuse = await loadFuseJS();
-      fuse = new Fuse(toolsData, {
-        keys: ['name', 'description'],
-        threshold: 0.3,
-        includeScore: true,
+        };
+        script.onerror = () => {
+          reject(new Error('Failed to load Fuse.js from CDN'));
+        };
+        document.head.appendChild(script);
       });
-      console.log('Fuse.js initialized successfully');
-      return true;
-    } catch (error) {
-      console.error('Failed to load Fuse.js:', error);
-      return false;
+      
+      return this.fuseLoadPromise;
     }
+    
+    /**
+     * 初始化 Fuse.js 搜索索引
+     */
+    async init() {
+      if (this.initPromise) {
+        return this.initPromise;
+      }
+      
+      this.initPromise = (async () => {
+        try {
+          // 加载 Fuse.js
+          const Fuse = await this.loadFuse();
+          
+          if (!Fuse || typeof Fuse !== 'function') {
+            throw new Error('Fuse.js not available');
+          }
+          
+          // 创建搜索索引 - 参考Google搜索，使用更宽松的配置
+          this.fuse = new Fuse(this.toolsData, {
+            keys: [
+              { name: 'name', weight: 0.8 },      // 名称匹配权重更高
+              { name: 'description', weight: 0.2 } // 描述匹配权重较低
+            ],
+            threshold: 0.5,  // 进一步放宽阈值（0.0=完全匹配，1.0=匹配所有），0.5允许更多结果
+            includeScore: true,
+            minMatchCharLength: 1,  // 最小匹配字符长度
+            ignoreLocation: true,   // 忽略位置，提高匹配率
+            findAllMatches: false,  // 不查找所有匹配，提高性能
+            shouldSort: true,       // 确保结果排序
+          });
+          
+          this.isInitialized = true;
+          logger.log('Fuse.js initialized successfully');
+          return true;
+        } catch (error) {
+          logger.error('Failed to initialize Fuse.js:', error);
+          this.isInitialized = false;
+          return false;
+        }
+      })();
+      
+      return this.initPromise;
+    }
+    
+    /**
+     * 执行搜索（去重）
+     */
+    search(query, limit = FUSE_SEARCH_LIMIT) {
+      if (!this.isInitialized || !this.fuse || !query.trim()) {
+        return [];
+      }
+      
+      try {
+        // Fuse.js 搜索，返回结果按相关性排序
+        // 增加搜索limit，确保去重后仍有足够的结果
+        const searchLimit = Math.max(limit * 3, 30); // 搜索更多结果以便去重
+        const results = this.fuse.search(query, { limit: searchLimit });
+        
+        // 提取工具项，保持 Fuse.js 的排序（相关性从高到低）
+        const items = results.map((result) => result.item);
+        
+        // 去重：基于 id 或 name，保留第一个出现的（相关性最高的）
+        const seen = new Set();
+        const uniqueItems = [];
+        for (const tool of items) {
+          const key = tool.id || tool.name;
+          if (!seen.has(key)) {
+            seen.add(key);
+            uniqueItems.push(tool);
+            // 如果已经达到需要的数量，提前退出
+            if (uniqueItems.length >= limit) {
+              break;
+            }
+          }
+        }
+        
+        // 调试信息
+        if (isDev && query) {
+          console.log('[搜索] 查询:', query, 'Fuse结果数:', results.length, '去重后:', uniqueItems.length, '限制:', limit);
+          if (uniqueItems.length < limit && results.length > 0) {
+            console.warn('[搜索警告] 结果数量不足，可能需要调整threshold');
+          }
+        }
+        
+        return uniqueItems;
+      } catch (error) {
+        logger.error('Search error:', error);
+        return [];
+      }
+    }
+    
+    /**
+     * 高亮匹配文本
+     */
+    highlightText(text, query) {
+      if (!query || !text) return escapeHtml(text);
+      const escapedText = escapeHtml(text);
+      const escapedQuery = escapeHtml(query);
+      const regex = new RegExp(`(${escapedQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
+      return escapedText.replace(regex, '<span class="highlight">$1</span>');
+    }
+    
+    /**
+     * 等待初始化完成
+     */
+    async waitForInit() {
+      if (this.isInitialized) {
+        return true;
+      }
+      if (!this.initPromise) {
+        await this.init();
+      }
+      return this.initPromise;
+    }
+  }
+  
+  // ==================== 主逻辑 ====================
+  
+  // 使用从 locales.ts 导入的翻译
+  const translations = JSON.parse(translationsJSON);
+  
+  // 状态变量
+  let currentPage = 1;
+  let filteredTools = [...toolsData];
+  let selectedIndex = -1;
+  let suggestions = [];
+  let currentQuery = '';
+  
+  // 初始化搜索管理器
+  const searchManager = new SearchManager(toolsData, translations);
+  
+  // 初始化国际化更新器（传入 COLORS 用于样式）
+  const i18nUpdater = new I18nUpdater(translations, COLORS);
+  
+  // 获取翻译函数（客户端）
+  function t(key) {
+    return tClient(key, translations);
   }
 
   // 渲染工具卡片
   function renderTools(tools, page, updateURL = true, isSearching = false) {
-    const container = document.getElementById('tools-container');
-    const paginationContainer = document.getElementById('pagination-container');
+    const container = document.getElementById(DOM_IDS.TOOLS_CONTAINER);
+    const paginationContainer = document.getElementById(DOM_IDS.PAGINATION_CONTAINER);
     if (!container) return;
 
     // 如果工具列表为空，显示空状态并隐藏分页
     if (tools.length === 0) {
-      const locale = getLocale();
-      const emptyState = translations[locale]?.emptyState || translations.zh.emptyState;
+      const locale = getClientLocale();
+      const t = translations[locale] || translations['zh'];
+      const emptyState = t.emptyState;
       
       container.innerHTML = `
-        <div class="col-span-full flex flex-col items-center justify-center py-16 px-4">
-          <div class="w-24 h-24 mb-6 rounded-full bg-[#FFF5F4] dark:bg-[#FF5A50]/10 flex items-center justify-center">
-            <svg class="w-12 h-12 text-[#FF5A50] dark:text-[#FF6B60]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="col-span-full flex flex-col items-center justify-center py-12 px-4">
+          <div class="empty-state-icon w-24 h-24 mb-5 rounded-full flex items-center justify-center">
+            <svg class="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </div>
           <h3 id="empty-state-message" class="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-            ${emptyState.message}
+            ${escapeHtml(emptyState.message)}
           </h3>
           <p id="empty-state-description" class="text-gray-500 dark:text-gray-400 text-center max-w-md">
-            ${emptyState.description}
+            ${escapeHtml(emptyState.description)}
           </p>
         </div>
       `;
@@ -249,51 +541,58 @@ const initialTools = toolsData.slice(startIndex, endIndex);
 
     // 确保页码有效
     const totalPages = Math.ceil(tools.length / ITEMS_PER_PAGE);
-    if (page < 1) page = 1;
-    if (page > totalPages && totalPages > 0) page = totalPages;
+    let safePage = page;
+    if (safePage < 1) safePage = 1;
+    if (safePage > totalPages && totalPages > 0) safePage = totalPages;
 
-    const startIndex = (page - 1) * ITEMS_PER_PAGE;
+    const startIndex = (safePage - 1) * ITEMS_PER_PAGE;
     const endIndex = startIndex + ITEMS_PER_PAGE;
     const pageTools = tools.slice(startIndex, endIndex);
 
-    container.innerHTML = pageTools
-      .map(
-        (tool) => `
-      <a
-        href="${escapeHtml(tool.url)}"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="group relative block p-5 sm:p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 hover:border-[#FF5A50] dark:hover:border-[#FF6B60] hover:shadow-lg hover:shadow-[#FF5A50]/10 dark:hover:shadow-[#FF6B60]/20 transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.02] before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-[#FFF5F4]/0 before:via-[#FFF5F4]/0 before:to-[#FFF5F4]/0 hover:before:from-[#FFF5F4]/60 hover:before:via-[#FFF5F4]/30 hover:before:to-transparent dark:hover:before:from-[#FF5A50]/5 dark:hover:before:via-[#FF5A50]/3 dark:hover:before:to-transparent before:transition-all before:duration-300 before:-z-10"
-      >
-        <div class="relative z-10 flex items-start justify-between mb-3 sm:mb-4">
-          <div class="flex items-center gap-3 flex-1 min-w-0">
-            <span class="flex-shrink-0 w-2.5 h-2.5 bg-gradient-to-br from-[#FF5A50] via-[#FF6B60] to-[#FF5A50] rounded-full mt-1 shadow-sm shadow-[#FF5A50]/50 ring-1 ring-[#FF5A50]/20"></span>
-            <h3 class="font-semibold text-gray-900 dark:text-white truncate group-hover:text-[#FF5A50] dark:group-hover:text-[#FF6B60] transition-colors duration-300 text-base sm:text-lg leading-snug">
-              ${escapeHtml(tool.name)}
-            </h3>
-          </div>
-          <button
-            class="flex-shrink-0 p-1.5 sm:p-2 text-gray-400 dark:text-gray-500 hover:text-[#FF5A50] dark:hover:text-[#FF6B60] hover:bg-[#FFF5F4] dark:hover:bg-[#FF5A50]/10 rounded-lg transition-all duration-300 active:scale-95 touch-manipulation"
-            aria-label="${t('toolCard.openLink')}"
-            onclick="event.preventDefault(); event.stopPropagation(); window.open('${escapeHtml(tool.url)}', '_blank', 'noopener,noreferrer');"
+    const locale = getClientLocale();
+    const cardsHTML = pageTools
+      .map((tool) => {
+        const t = translations[locale] || translations['zh'];
+        const openLinkLabel = t.toolCard.openLink || 'Open link';
+        
+        return `
+          <a
+            href="${escapeHtml(tool.url)}"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="tool-card card-hover-primary group relative block p-5 sm:p-6 bg-white dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 transition-all duration-300 ease-out hover:-translate-y-1 hover:scale-[1.02] before:absolute before:inset-0 before:rounded-2xl before:bg-gradient-to-br before:from-[var(--theme-primary-light)]/0 before:via-[var(--theme-primary-light)]/0 before:to-[var(--theme-primary-light)]/0 hover:before:from-[var(--theme-primary-light)]/60 hover:before:via-[var(--theme-primary-light)]/30 hover:before:to-transparent dark:hover:before:from-[var(--theme-primary)]/5 dark:hover:before:via-[var(--theme-primary)]/3 dark:hover:before:to-transparent before:transition-all before:duration-300 before:-z-10"
           >
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-            </svg>
-          </button>
-        </div>
-        <p class="relative z-10 text-sm sm:text-base text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed min-h-[3.25rem] sm:min-h-[3.5rem]">
-          ${escapeHtml(tool.description)}
-        </p>
-      </a>
-    `
-      )
+            <div class="relative z-10 flex items-start justify-between mb-2.5 sm:mb-3">
+              <div class="flex items-center gap-3 flex-1 min-w-0">
+                <span class="tool-card-indicator flex-shrink-0 w-2.5 h-2.5 rounded-full mt-1 shadow-sm ring-1"></span>
+                <h3 class="tool-card-title font-semibold text-gray-900 dark:text-white truncate transition-colors duration-300 text-base sm:text-lg leading-snug">
+                  ${escapeHtml(tool.name)}
+                </h3>
+              </div>
+              <button
+                class="tool-card-button flex-shrink-0 p-1.5 sm:p-2 text-gray-400 dark:text-gray-500 rounded-lg transition-all duration-300 active:scale-95 touch-manipulation"
+                aria-label="${escapeHtml(openLinkLabel)}"
+                onclick="event.preventDefault(); event.stopPropagation(); window.open('${escapeHtml(tool.url)}', '_blank', 'noopener,noreferrer');"
+              >
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+              </button>
+            </div>
+            <p class="relative z-10 text-sm sm:text-base text-gray-600 dark:text-gray-400 line-clamp-2 leading-relaxed min-h-[3.25rem] sm:min-h-[3.5rem]">
+              ${escapeHtml(tool.description)}
+            </p>
+          </a>
+        `;
+      })
       .join('');
+
+    container.innerHTML = cardsHTML;
 
     // 更新统计信息（根据是否在搜索状态显示不同文本）
     updateStats(tools.length, isSearching);
     // 更新分页
-    updatePagination(page, totalPages, updateURL);
+    updatePagination(safePage, totalPages, updateURL);
     
     // 滚动到顶部，模拟页面刷新效果
     scrollToTop();
@@ -328,26 +627,15 @@ const initialTools = toolsData.slice(startIndex, endIndex);
 
   // 更新统计信息
   function updateStats(total, isSearching = false) {
-    const statsText = document.getElementById('stats-text');
-    if (statsText) {
-      const locale = getLocale();
-      const statsLabel = isSearching 
-        ? t('page.statsSearch')
-        : t('page.stats');
-      
-      statsText.innerHTML = `<span class="inline-flex items-center gap-2">
-        <span class="px-2.5 py-1 rounded-md bg-[#FFF5F4] dark:bg-[#FF5A50]/10 text-sm font-medium text-[#FF5A50] dark:text-[#FF6B60]">${statsLabel}</span>
-        <span id="total-count" class="font-semibold text-gray-900 dark:text-white">${total}</span>
-        <span>${t('page.items')}</span>
-      </span>`;
-    }
+    const locale = getClientLocale();
+    i18nUpdater.updateStats(locale, total, isSearching);
   }
 
   // 更新分页
   function updatePagination(page, totalPages, updateURL = true) {
     currentPage = page;
     
-    const paginationContainer = document.getElementById('pagination-container');
+    const paginationContainer = document.getElementById(DOM_IDS.PAGINATION_CONTAINER);
     if (!paginationContainer) return;
     
     // 如果总页数为0或工具列表为空，隐藏分页
@@ -363,7 +651,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
 
     // 创建分页容器
     const paginationDiv = document.createElement('div');
-    paginationDiv.className = 'flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0 mt-8 sm:mt-12 pt-6 sm:pt-8 border-t border-gray-200/60 dark:border-gray-800/60';
+    paginationDiv.className = 'flex flex-col sm:flex-row items-center justify-between gap-4 sm:gap-0 mt-6 sm:mt-8 pt-4 sm:pt-6 border-t border-gray-200/60 dark:border-gray-800/60';
     
     const buttonContainer = document.createElement('div');
     buttonContainer.className = 'flex gap-3';
@@ -371,39 +659,42 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     const pageInfo = document.createElement('div');
     pageInfo.id = 'pagination-page-info';
     pageInfo.className = 'text-sm sm:text-base font-medium text-gray-600 dark:text-gray-400';
-    pageInfo.innerHTML = `${t('pagination.page')} <span class="font-semibold text-gray-900 dark:text-white">${page}</span> / <span class="font-semibold text-gray-900 dark:text-white">${totalPages}</span>`;
+    const locale = getClientLocale();
+    const t = translations[locale] || translations['zh'];
+    pageInfo.innerHTML = `${t.pagination.page} <span class="font-semibold text-gray-900 dark:text-white">${page}</span> / <span class="font-semibold text-gray-900 dark:text-white">${totalPages}</span>`;
     
     // 创建上一页按钮
     const prevBtn = document.createElement('button');
     prevBtn.id = 'prev-page';
-    prevBtn.className = 'inline-flex items-center justify-center px-4 py-2 sm:px-5 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-[#FFF5F4] dark:hover:bg-[#FF5A50]/10 hover:border-[#FF5A50] dark:hover:border-[#FF6B60] hover:text-[#FF5A50] dark:hover:text-[#FF6B60] transition-all duration-200 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 disabled:hover:text-gray-700 disabled:hover:shadow-none dark:disabled:hover:bg-gray-800 dark:disabled:hover:border-gray-700 dark:disabled:hover:text-gray-300 touch-manipulation';
+    prevBtn.className = 'pagination-btn inline-flex items-center justify-center px-4 py-2 sm:px-5 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg transition-all duration-200 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 disabled:hover:text-gray-700 disabled:hover:shadow-none dark:disabled:hover:bg-gray-800 dark:disabled:hover:border-gray-700 dark:disabled:hover:text-gray-300 touch-manipulation';
     prevBtn.disabled = page === 1;
     
     const prevText = document.createElement('span');
     prevText.id = 'prev-page-text';
-    prevText.textContent = t('pagination.prev');
+    prevText.textContent = t.pagination.prev;
     
     prevBtn.appendChild(prevText);
     
     // 创建下一页按钮
     const nextBtn = document.createElement('button');
     nextBtn.id = 'next-page';
-    nextBtn.className = 'inline-flex items-center justify-center px-4 py-2 sm:px-5 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg hover:bg-[#FFF5F4] dark:hover:bg-[#FF5A50]/10 hover:border-[#FF5A50] dark:hover:border-[#FF6B60] hover:text-[#FF5A50] dark:hover:text-[#FF6B60] transition-all duration-200 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 disabled:hover:text-gray-700 disabled:hover:shadow-none dark:disabled:hover:bg-gray-800 dark:disabled:hover:border-gray-700 dark:disabled:hover:text-gray-300 touch-manipulation';
+    nextBtn.className = 'pagination-btn inline-flex items-center justify-center px-4 py-2 sm:px-5 sm:py-2.5 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg transition-all duration-200 hover:shadow-sm active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white disabled:hover:border-gray-300 disabled:hover:text-gray-700 disabled:hover:shadow-none dark:disabled:hover:bg-gray-800 dark:disabled:hover:border-gray-700 dark:disabled:hover:text-gray-300 touch-manipulation';
     nextBtn.disabled = page === totalPages;
     
     const nextText = document.createElement('span');
     nextText.id = 'next-page-text';
-    nextText.textContent = t('pagination.next');
+    nextText.textContent = t.pagination.next;
     
     nextBtn.appendChild(nextText);
     
-    // 绑定事件
+    // 绑定事件 - 使用闭包保存当前 page 值
+    const currentPageForEvent = page; // 保存当前页码到闭包中
     prevBtn.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      if (currentPage > 1) {
+      if (currentPageForEvent > 1) {
         const isSearching = currentQuery !== '';
-        renderTools(filteredTools, currentPage - 1, true, isSearching);
+        renderTools(filteredTools, currentPageForEvent - 1, true, isSearching);
       }
     });
     
@@ -411,9 +702,9 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       e.preventDefault();
       e.stopPropagation();
       const currentTotalPages = Math.ceil(filteredTools.length / ITEMS_PER_PAGE);
-      if (currentPage < currentTotalPages) {
+      if (currentPageForEvent < currentTotalPages) {
         const isSearching = currentQuery !== '';
-        renderTools(filteredTools, currentPage + 1, true, isSearching);
+        renderTools(filteredTools, currentPageForEvent + 1, true, isSearching);
       }
     });
     
@@ -427,40 +718,24 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     paginationContainer.appendChild(paginationDiv);
   }
 
-  // 搜索相关变量
-  let selectedIndex = -1;
-  let suggestions = [];
-  let currentQuery = '';
-
-  // 高亮匹配文本
-  function highlightText(text, query) {
-    if (!query || !text) return escapeHtml(text);
-    
-    const escapedText = escapeHtml(text);
-    const escapedQuery = escapeHtml(query);
-    const regex = new RegExp(`(${escapedQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-    return escapedText.replace(regex, '<span class="highlight">$1</span>');
-  }
-
   // 执行搜索（应用到结果列表）
   function performSearch(query) {
-    if (!fuse) {
-      console.warn('Fuse.js not initialized yet');
-      return;
-    }
-
     currentQuery = query.trim();
 
     if (currentQuery === '') {
       filteredTools = [...toolsData];
     } else {
-      try {
-        const results = fuse.search(currentQuery);
-        filteredTools = results.map((result) => result.item);
-      } catch (error) {
-        console.error('Search error:', error);
-        filteredTools = [...toolsData];
+      // 如果搜索管理器未初始化，先初始化
+      if (!searchManager.isInitialized) {
+        searchManager.init().then(() => {
+          filteredTools = searchManager.search(currentQuery, toolsData.length);
+          currentPage = 1;
+          updateURLParam('page', null);
+          renderTools(filteredTools, 1, false, true);
+        });
+        return;
       }
+      filteredTools = searchManager.search(currentQuery, toolsData.length);
     }
 
     // 搜索时重置到第一页并更新 URL
@@ -470,14 +745,21 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     renderTools(filteredTools, 1, false, isSearching);
   }
 
-  // 显示搜索建议
-  function showSuggestions(query) {
-    if (!fuse) return;
-
-    const suggestionsContainer = document.getElementById('search-suggestions');
-    const suggestionsList = document.getElementById('suggestions-list');
+  // 显示搜索建议（自动检测桌面端或移动端）
+  async function showSuggestions(query) {
+    // 优先使用桌面端搜索框，如果不存在则使用移动端
+    let suggestionsContainer = document.getElementById(DOM_IDS.SEARCH_SUGGESTIONS);
+    let suggestionsList = document.getElementById(DOM_IDS.SUGGESTIONS_LIST);
     
-    if (!suggestionsContainer || !suggestionsList) return;
+    if (!suggestionsContainer || !suggestionsList) {
+      suggestionsContainer = document.getElementById('mobile-search-suggestions');
+      suggestionsList = document.getElementById('mobile-suggestions-list');
+    }
+    
+    if (!suggestionsContainer || !suggestionsList) {
+      logger.warn('Suggestions container not found');
+      return;
+    }
 
     if (!query || query.trim() === '') {
       suggestionsContainer.classList.add('hidden');
@@ -486,58 +768,114 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       return;
     }
 
+    // 确保搜索管理器已初始化
+    await searchManager.waitForInit();
+    
+    if (!searchManager.isInitialized) {
+      suggestionsContainer.classList.add('hidden');
+      return;
+    }
+
     try {
-      const results = fuse.search(query, { limit: 8 });
-      suggestions = results.map((result) => result.item);
+      suggestions = searchManager.search(query, FUSE_SEARCH_LIMIT);
+      const locale = getClientLocale();
+      const t = translations[locale] || translations['zh'];
+
+      // 调试：记录搜索结果数量
+      if (isDev) {
+        console.log('[搜索建议] 查询:', query, '结果数量:', suggestions.length);
+      }
 
       if (suggestions.length === 0) {
         suggestionsList.innerHTML = `
-          <div class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
-            ${t('search.noResults')}
+          <div class="empty-suggestion px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
+            ${escapeHtml(t.search.noResults)}
           </div>
         `;
         suggestionsContainer.classList.remove('hidden');
       } else {
-        suggestionsList.innerHTML = suggestions
-          .map(
-            (tool, index) => `
-          <div
-            class="suggestion-item px-3 py-2 cursor-pointer"
-            data-index="${index}"
-            data-name="${escapeHtml(tool.name)}"
-          >
-            <div class="suggestion-content">
-              <div class="suggestion-icon">
-                <svg class="w-4 h-4 text-gray-400 dark:text-gray-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-              <div class="suggestion-text">
-                <div class="suggestion-title text-gray-900 dark:text-gray-100">
-                  ${highlightText(tool.name, query)}
-                </div>
-                <div class="suggestion-description text-gray-600 dark:text-gray-400 line-clamp-1">
-                  ${highlightText(tool.description, query)}
-                </div>
-              </div>
-            </div>
-          </div>
-        `
-          )
-          .join('');
-
-        // 绑定点击事件
-        suggestionsList.querySelectorAll('.suggestion-item').forEach((item, index) => {
-          item.addEventListener('click', () => {
-            selectSuggestion(index);
-          });
+        // 清空列表
+        suggestionsList.innerHTML = '';
+        
+        // 逐个创建并插入建议项（Google风格：图标+名称，单行显示）
+        suggestions.forEach((tool, index) => {
+          const highlightedName = searchManager.highlightText(tool.name, query);
+          const isSelected = index === selectedIndex;
+          
+          // 创建建议项元素
+          const itemDiv = document.createElement('div');
+          itemDiv.className = 'suggestion-item px-4 py-2.5 cursor-pointer';
+          itemDiv.setAttribute('data-index', String(index));
+          itemDiv.setAttribute('data-name', escapeHtml(tool.name));
+          itemDiv.setAttribute('role', 'option');
+          itemDiv.setAttribute('aria-selected', isSelected ? 'true' : 'false');
+          itemDiv.id = `suggestion-${index}`;
+          itemDiv.setAttribute('tabindex', isSelected ? '0' : '-1');
+          
+          // 创建内容容器（横向布局：图标 + 名称）
+          const contentDiv = document.createElement('div');
+          contentDiv.className = 'suggestion-content';
+          
+          // 创建图标容器
+          const iconDiv = document.createElement('div');
+          iconDiv.className = 'suggestion-icon';
+          iconDiv.setAttribute('aria-hidden', 'true');
+          
+          // 创建 SVG 图标（Google风格）
+          const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+          svg.setAttribute('class', 'w-5 h-5');
+          svg.setAttribute('fill', 'none');
+          svg.setAttribute('stroke', 'currentColor');
+          svg.setAttribute('viewBox', '0 0 24 24');
+          svg.setAttribute('stroke-width', '2');
+          svg.setAttribute('style', 'color: inherit;'); // 继承父元素颜色
+          const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+          path.setAttribute('stroke-linecap', 'round');
+          path.setAttribute('stroke-linejoin', 'round');
+          path.setAttribute('d', 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z');
+          svg.appendChild(path);
+          iconDiv.appendChild(svg);
+          
+          // 创建标题（只显示名称，不显示描述）
+          const titleSpan = document.createElement('span');
+          titleSpan.className = 'suggestion-title';
+          titleSpan.innerHTML = highlightedName;
+          
+          // 组装结构：图标在前，名称在后
+          contentDiv.appendChild(iconDiv);
+          contentDiv.appendChild(titleSpan);
+          itemDiv.appendChild(contentDiv);
+          
+          // 插入到列表
+          suggestionsList.appendChild(itemDiv);
         });
+        
+        // 验证：确保所有建议项都已插入
+        const insertedItems = suggestionsList.querySelectorAll('.suggestion-item');
+        if (insertedItems.length !== suggestions.length) {
+          logger.warn(`搜索建议数量不匹配: 期望 ${suggestions.length} 条，实际插入 ${insertedItems.length} 条`);
+          if (isDev) {
+            console.error('[错误] 搜索查询:', query);
+            console.error('[错误] 搜索结果数量:', suggestions.length);
+            console.error('[错误] 搜索结果名称:', suggestions.map(s => s.name));
+            console.error('[错误] 实际插入的元素数量:', insertedItems.length);
+            console.error('[错误] DOM 结构:', suggestionsList.innerHTML.substring(0, 500));
+          }
+        } else if (isDev) {
+          console.log('[搜索建议] ✓ 成功插入', insertedItems.length, '条建议');
+        }
+        
+        // 更新 ARIA 属性
+        suggestionsContainer.setAttribute('aria-expanded', 'true');
+        if (suggestions.length > 0) {
+          suggestionsContainer.setAttribute('aria-owns', suggestions.map((_, i) => `suggestion-${i}`).join(' '));
+        }
 
         suggestionsContainer.classList.remove('hidden');
         selectedIndex = -1;
       }
     } catch (error) {
-      console.error('Suggestions error:', error);
+      logger.error('Suggestions error:', error);
       suggestionsContainer.classList.add('hidden');
     }
   }
@@ -547,9 +885,9 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     if (index < 0 || index >= suggestions.length) return;
 
     const tool = suggestions[index];
-    const searchInput = document.getElementById('search-input');
+    const searchInput = document.getElementById(DOM_IDS.SEARCH_INPUT);
     
-    if (searchInput) {
+    if (searchInput && searchInput.tagName === 'INPUT') {
       searchInput.value = tool.name;
       performSearch(tool.name);
       hideSuggestions();
@@ -557,33 +895,62 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     }
   }
 
-  // 隐藏建议
+  // 隐藏建议（同时隐藏桌面端和移动端）
   function hideSuggestions() {
-    const suggestionsContainer = document.getElementById('search-suggestions');
-    if (suggestionsContainer) {
-      suggestionsContainer.classList.add('hidden');
+    const desktopContainer = document.getElementById(DOM_IDS.SEARCH_SUGGESTIONS);
+    const mobileContainer = document.getElementById('mobile-search-suggestions');
+    
+    if (desktopContainer) {
+      desktopContainer.classList.add('hidden');
+    }
+    if (mobileContainer) {
+      mobileContainer.classList.add('hidden');
     }
     selectedIndex = -1;
   }
 
   // 更新选中项样式
   function updateSelectedSuggestion() {
-    const items = document.querySelectorAll('.suggestion-item');
-    items.forEach((item, index) => {
-      if (index === selectedIndex) {
-        item.classList.add('active');
-        item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
-      } else {
-        item.classList.remove('active');
-      }
+    // 同时处理桌面端和移动端
+    const desktopList = document.getElementById(DOM_IDS.SUGGESTIONS_LIST);
+    const mobileList = document.getElementById('mobile-suggestions-list');
+    const lists = [desktopList, mobileList].filter(Boolean);
+    
+    lists.forEach(list => {
+      if (!list) return;
+      const items = list.querySelectorAll('.suggestion-item');
+      items.forEach((item, index) => {
+        if (index === selectedIndex) {
+          item.classList.add('active');
+          item.setAttribute('aria-selected', 'true');
+          item.setAttribute('tabindex', '0');
+          item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+        } else {
+          item.classList.remove('active');
+          item.setAttribute('aria-selected', 'false');
+          item.setAttribute('tabindex', '-1');
+        }
+      });
     });
   }
 
-  // 绑定搜索功能
+  // 绑定搜索功能（支持桌面端和移动端）
   function bindSearchEvents() {
-    const searchInput = document.getElementById('search-input');
-    const searchClear = document.getElementById('search-clear');
-    const searchContainer = document.getElementById('search-container');
+    // 优先使用桌面端搜索框，如果不存在则使用移动端
+    let searchInput = document.getElementById(DOM_IDS.SEARCH_INPUT);
+    let searchClear = document.getElementById(DOM_IDS.SEARCH_CLEAR);
+    let searchContainer = document.getElementById(DOM_IDS.SEARCH_CONTAINER);
+    let suggestionsContainer = document.getElementById(DOM_IDS.SEARCH_SUGGESTIONS);
+    let suggestionsList = document.getElementById(DOM_IDS.SUGGESTIONS_LIST);
+    
+    // 如果桌面端不存在，使用移动端
+    if (!searchInput) {
+      searchInput = document.getElementById('mobile-search-input');
+      searchClear = document.getElementById('mobile-search-clear');
+      searchContainer = document.getElementById('mobile-search-container');
+      suggestionsContainer = document.getElementById('mobile-search-suggestions');
+      suggestionsList = document.getElementById('mobile-suggestions-list');
+    }
 
     if (!searchInput) {
       setTimeout(bindSearchEvents, 100);
@@ -593,26 +960,34 @@ const initialTools = toolsData.slice(startIndex, endIndex);
     // 输入事件 - 显示建议
     let inputTimeout;
     searchInput.addEventListener('input', (e) => {
-      const query = e.target.value;
+      const target = e.target;
+      const query = target && target.tagName === 'INPUT' ? target.value : '';
       
-      // 显示/隐藏清除按钮
-      if (searchClear) {
-        if (query.trim()) {
-          searchClear.classList.remove('hidden');
-        } else {
-          searchClear.classList.add('hidden');
-        }
+      // 显示/隐藏清除按钮 - 同时处理桌面端和移动端
+      const desktopClear = document.getElementById(DOM_IDS.SEARCH_CLEAR);
+      const mobileClear = document.getElementById('mobile-search-clear');
+      
+      if (query.trim()) {
+        if (desktopClear) desktopClear.classList.remove('hidden');
+        if (mobileClear) mobileClear.classList.remove('hidden');
+      } else {
+        if (desktopClear) desktopClear.classList.add('hidden');
+        if (mobileClear) mobileClear.classList.add('hidden');
       }
 
       clearTimeout(inputTimeout);
-      inputTimeout = setTimeout(() => {
-        showSuggestions(query);
-      }, 150);
+      inputTimeout = setTimeout(async () => {
+        await showSuggestions(query);
+      }, SEARCH_DEBOUNCE_MS);
     });
 
-    // 键盘事件
-    searchInput.addEventListener('keydown', (e) => {
-      const suggestionsContainer = document.getElementById('search-suggestions');
+    // 键盘事件处理函数（同时支持桌面端和移动端）
+    function handleSearchKeydown(e) {
+      // 检测当前是桌面端还是移动端搜索框
+      const isDesktop = e.target.id === DOM_IDS.SEARCH_INPUT;
+      const suggestionsContainer = isDesktop 
+        ? document.getElementById(DOM_IDS.SEARCH_SUGGESTIONS)
+        : document.getElementById('mobile-search-suggestions');
       const isVisible = suggestionsContainer && !suggestionsContainer.classList.contains('hidden');
 
       switch (e.key) {
@@ -635,75 +1010,129 @@ const initialTools = toolsData.slice(startIndex, endIndex);
           if (isVisible && selectedIndex >= 0 && selectedIndex < suggestions.length) {
             selectSuggestion(selectedIndex);
           } else {
-            performSearch(searchInput.value);
+            if (searchInput && searchInput.tagName === 'INPUT') {
+              performSearch(searchInput.value);
+            }
             hideSuggestions();
           }
           break;
         case 'Escape':
           hideSuggestions();
-          searchInput.blur();
+          if (searchInput && searchInput.tagName === 'INPUT') {
+            searchInput.blur();
+          }
           break;
       }
-    });
+    }
+
+    // 绑定键盘事件到当前搜索框
+    searchInput.addEventListener('keydown', handleSearchKeydown);
+    
+    // 同时绑定移动端搜索框的键盘事件（如果存在且不同）
+    const mobileSearchInput = document.getElementById('mobile-search-input');
+    if (mobileSearchInput && mobileSearchInput !== searchInput) {
+      mobileSearchInput.addEventListener('keydown', handleSearchKeydown);
+      
+      // 移动端搜索框的聚焦事件
+      mobileSearchInput.addEventListener('focus', async () => {
+        if (mobileSearchInput && mobileSearchInput.tagName === 'INPUT' && mobileSearchInput.value.trim()) {
+          await showSuggestions(mobileSearchInput.value);
+        }
+      });
+    }
 
     // 聚焦事件
-    searchInput.addEventListener('focus', () => {
-      if (searchInput.value.trim()) {
-        showSuggestions(searchInput.value);
+    searchInput.addEventListener('focus', async () => {
+      if (searchInput && searchInput.tagName === 'INPUT' && searchInput.value.trim()) {
+        await showSuggestions(searchInput.value);
       }
     });
+    
+    // 设置搜索建议点击事件委托（只绑定一次）
+    const desktopList = document.getElementById(DOM_IDS.SUGGESTIONS_LIST);
+    const mobileList = document.getElementById('mobile-suggestions-list');
+    
+    // 创建统一的事件处理函数
+    const handleSuggestionClick = (e) => {
+      const item = e.target.closest('.suggestion-item');
+      if (item) {
+        e.preventDefault();
+        e.stopPropagation();
+        const index = parseInt(item.getAttribute('data-index'), 10);
+        if (!isNaN(index)) {
+          selectSuggestion(index);
+        }
+      }
+    };
+    
+    // 绑定到桌面端和移动端列表（如果存在且未绑定）
+    if (desktopList && !desktopList._suggestionClickHandler) {
+      desktopList._suggestionClickHandler = handleSuggestionClick;
+      desktopList.addEventListener('click', handleSuggestionClick);
+    }
+    if (mobileList && !mobileList._suggestionClickHandler) {
+      mobileList._suggestionClickHandler = handleSuggestionClick;
+      mobileList.addEventListener('click', handleSuggestionClick);
+    }
+    
+    // 确保输入框可以正常使用
+    logger.log('Search events bound successfully');
 
     // 清除按钮
     if (searchClear) {
       searchClear.addEventListener('click', (e) => {
         e.preventDefault();
         e.stopPropagation();
-        searchInput.value = '';
-        searchInput.focus();
+        if (searchInput && searchInput.tagName === 'INPUT') {
+          searchInput.value = '';
+          searchInput.focus();
+        }
         searchClear.classList.add('hidden');
         performSearch('');
         hideSuggestions();
       });
     }
 
-    // 点击外部关闭建议
+    // 点击外部关闭建议（同时处理桌面端和移动端）
     document.addEventListener('click', (e) => {
-      if (searchContainer && !searchContainer.contains(e.target)) {
+      const desktopContainer = document.getElementById(DOM_IDS.SEARCH_CONTAINER);
+      const mobileContainer = document.getElementById('mobile-search-container');
+      
+      const isClickInsideDesktop = desktopContainer && desktopContainer.contains(e.target);
+      const isClickInsideMobile = mobileContainer && mobileContainer.contains(e.target);
+      
+      if (!isClickInsideDesktop && !isClickInsideMobile) {
         hideSuggestions();
       }
     });
 
-    // 键盘快捷键 ⌘K / Ctrl+K
+    // 键盘快捷键 ⌘K / Ctrl+K（优先聚焦桌面端搜索框）
     document.addEventListener('keydown', (e) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
         e.preventDefault();
-        searchInput.focus();
-        if (searchInput.value.trim()) {
-          showSuggestions(searchInput.value);
+        // 优先使用桌面端搜索框
+        let targetInput = document.getElementById(DOM_IDS.SEARCH_INPUT);
+        if (!targetInput) {
+          targetInput = document.getElementById('mobile-search-input');
+        }
+        
+        if (targetInput && targetInput.tagName === 'INPUT') {
+          targetInput.focus();
+          if (targetInput.value.trim()) {
+            showSuggestions(targetInput.value).catch(err => logger.error('Show suggestions error:', err));
+          }
         }
       }
     });
   }
 
-  // 更新空状态文本（用于语言切换）
-  function updateEmptyStateText(locale) {
-    const messageEl = document.getElementById('empty-state-message');
-    const descEl = document.getElementById('empty-state-description');
-    
-    if (messageEl && descEl) {
-      const emptyState = translations[locale]?.emptyState || translations.zh.emptyState;
-      messageEl.textContent = emptyState.message;
-      descEl.textContent = emptyState.description;
-    }
-  }
-
   // 监听语言变更事件
   window.addEventListener('localechange', function(e) {
-    const locale = (e.detail && e.detail.locale) ? e.detail.locale : getLocale();
-    // 更新空状态文本
-    updateEmptyStateText(locale);
+    const locale = (e.detail && e.detail.locale) ? e.detail.locale : getClientLocale();
+    // 更新所有国际化文本
+    i18nUpdater.updateAll(locale);
     // 如果当前显示的是空状态，重新渲染以更新文本
-    const container = document.getElementById('tools-container');
+    const container = document.getElementById(DOM_IDS.TOOLS_CONTAINER);
     if (container && filteredTools.length === 0) {
       const isSearching = currentQuery !== '';
       renderTools(filteredTools, currentPage, false, isSearching);
@@ -712,26 +1141,32 @@ const initialTools = toolsData.slice(startIndex, endIndex);
 
   // 初始化
   document.addEventListener('DOMContentLoaded', async () => {
-    console.log('DOMContentLoaded - Initializing...');
+    logger.log('DOMContentLoaded - Initializing...');
     
-    // 初始化 Fuse.js
-    const fuseInitialized = await initFuse();
-    if (!fuseInitialized) {
-      console.error('Failed to initialize Fuse.js');
+    // 检查并同步语言（如果服务端和客户端不一致，立即更新）
+    const clientLocale = getClientLocale();
+    if (clientLocale !== locale) {
+      // 客户端语言与服务端不一致，立即更新页面
+      i18nUpdater.updateAll(clientLocale);
+      // 更新 HTML lang 属性（setClientLocale 已处理，这里确保同步）
+      document.documentElement.lang = clientLocale === 'zh' ? 'zh-CN' : 'en';
     }
+    
+    // 初始化搜索管理器
+    await searchManager.init();
 
     // 从 URL 读取页码（与服务端保持一致）
-    const urlPage = getURLParam('page');
+    const urlPage = getURLParamNumber('page');
     if (urlPage && urlPage > 0) {
       currentPage = urlPage;
     } else {
       // 如果没有 URL 参数，从服务端渲染的页码读取
-      const paginationContainer = document.getElementById('pagination-container');
+      const paginationContainer = document.getElementById(DOM_IDS.PAGINATION_CONTAINER);
       if (paginationContainer) {
         const pageInfo = paginationContainer.querySelector('#pagination-page-info');
         if (pageInfo) {
           // 使用更通用的正则匹配数字模式，支持多语言
-          const match = pageInfo.textContent.match(/(\d+)\s*\/\s*\d+/);
+          const match = pageInfo.textContent?.match(/(\d+)\s*\/\s*\d+/);
           if (match) {
             currentPage = parseInt(match[1], 10);
           }
@@ -739,12 +1174,12 @@ const initialTools = toolsData.slice(startIndex, endIndex);
       }
     }
 
-    // 绑定搜索功能
+    // 绑定搜索功能（包含事件委托设置）
     bindSearchEvents();
 
     // 监听浏览器前进/后退事件
-    window.addEventListener('popstate', (e) => {
-      const urlPage = getURLParam('page');
+    window.addEventListener('popstate', () => {
+      const urlPage = getURLParamNumber('page');
       const page = urlPage && urlPage > 0 ? urlPage : 1;
       currentPage = page;
       const isSearching = currentQuery !== '';
@@ -753,7 +1188,7 @@ const initialTools = toolsData.slice(startIndex, endIndex);
 
     // 确保当前页码与 URL 同步
     const totalPages = Math.ceil(filteredTools.length / ITEMS_PER_PAGE);
-    const currentURLPage = getURLParam('page') || 1;
+    const currentURLPage = getURLParamNumber('page') || 1;
     
     // 如果 URL 中的页码与当前页码不一致，或者需要重新渲染分页
     if (currentURLPage !== currentPage) {

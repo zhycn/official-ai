@@ -1,11 +1,12 @@
 ---
 // 双模式主题切换组件：点击在亮色和暗色之间切换
+import { COLORS } from '../utils/constants';
 ---
 
 <button
   id="theme-toggle"
   type="button"
-  class="p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-[#FF5A50] dark:hover:text-[#FF6B60] hover:bg-[#FFF5F4] dark:hover:bg-[#FF5A50]/10 transition-colors duration-200 relative touch-manipulation"
+  class="theme-toggle-btn btn-hover-primary p-2 rounded-lg text-gray-600 dark:text-gray-400 transition-colors duration-200 relative touch-manipulation"
   aria-label="Toggle theme"
 >
   <!-- 亮色模式图标 -->
@@ -44,7 +45,7 @@
       try {
         localStorage.setItem('theme', theme);
       } catch (e) {
-        console.warn('Failed to save theme:', e);
+        // localStorage 不可用时静默失败
       }
     }
     
@@ -113,7 +114,7 @@
           detail: { theme: nextTheme } 
         }));
       } catch (e) {
-        console.warn('Failed to dispatch themechange event:', e);
+        // 事件派发失败时静默失败
       }
     }
     

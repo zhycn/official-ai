@@ -1,5 +1,6 @@
 ---
 // 底部版本信息组件
+import { COLORS } from '../utils/constants';
 const version = 'online v0.1.0';
 ---
 
@@ -7,10 +8,20 @@ const version = 'online v0.1.0';
     <li>
         <span class="text-gray-500 dark:text-gray-400 inline-flex items-center gap-2">
             <span class="relative w-2 h-2">
-              <span class="absolute inset-0 bg-[#FF5A50] rounded-full animate-ping opacity-75"></span>
-              <span class="relative w-2 h-2 bg-[#FF5A50] rounded-full"></span>
+              <span class="status-indicator-ping absolute inset-0 rounded-full animate-ping opacity-75"></span>
+              <span class="status-indicator relative w-2 h-2 rounded-full"></span>
             </span>
             {version}
           </span>
     </li>
 </ul>
+
+<style>
+  .status-indicator-ping {
+    background-color: var(--theme-primary);
+  }
+  
+  .status-indicator {
+    background-color: var(--theme-primary);
+  }
+</style>

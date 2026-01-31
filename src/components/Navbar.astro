@@ -6,6 +6,10 @@ import GithubIcon from './GithubIcon.astro';
 import ThemeToggle from './ThemeToggle.astro';
 import LanguageToggle from './LanguageToggle.astro';
 import SubmitLinkButton from './SubmitLinkButton.astro';
+import { getLocaleFromAstro, t } from '../i18n/locales';
+import { COLORS } from '../utils/constants';
+
+const locale = getLocaleFromAstro();
 ---
 
 <nav class="sticky top-0 z-50 bg-white/95 dark:bg-gray-900/95 backdrop-blur-md border-b border-gray-200/80 dark:border-gray-800/80">
@@ -16,13 +20,13 @@ import SubmitLinkButton from './SubmitLinkButton.astro';
 
       <!-- 搜索框 -->
       <div class="hidden md:block flex-1 max-w-2xl mx-8">
-        <SearchBox />
+        <SearchBox variant="desktop" />
       </div>
 
       <!-- 右侧功能区 -->
       <div class="flex items-center gap-1.5 sm:gap-2">
         <!-- 移动端搜索按钮 -->
-        <button id="mobile-search-toggle" class="md:hidden p-2 rounded-lg text-gray-600 dark:text-gray-400 hover:text-[#FF5A50] dark:hover:text-[#FF6B60] hover:bg-[#FFF5F4] dark:hover:bg-[#FF5A50]/10 transition-colors duration-200 touch-manipulation" aria-label="搜索">
+        <button id="mobile-search-toggle" class="mobile-search-toggle-btn btn-hover-primary md:hidden p-2 rounded-lg text-gray-600 dark:text-gray-400 transition-colors duration-200 touch-manipulation" aria-label={t('search.toggle', locale)}>
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
           </svg>
@@ -44,7 +48,7 @@ import SubmitLinkButton from './SubmitLinkButton.astro';
     
     <!-- 移动端搜索框 -->
     <div id="mobile-search-container" class="md:hidden pb-4 hidden">
-      <SearchBox />
+      <SearchBox variant="mobile" />
     </div>
   </div>
 </nav>
@@ -57,7 +61,7 @@ import SubmitLinkButton from './SubmitLinkButton.astro';
     if (mobileSearchToggle && mobileSearchContainer) {
       mobileSearchToggle.addEventListener('click', function() {
         mobileSearchContainer.classList.toggle('hidden');
-        const searchInput = document.getElementById('search-input');
+        const searchInput = document.getElementById('mobile-search-input');
         if (searchInput && !mobileSearchContainer.classList.contains('hidden')) {
           setTimeout(() => searchInput.focus(), 100);
         }

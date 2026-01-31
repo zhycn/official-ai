@@ -1,0 +1,230 @@
+/**
+ * 统一主题样式系统
+ * 
+ * 使用 CSS 变量实现主题统一管理
+ * 所有组件应使用这些变量，而不是硬编码颜色值
+ */
+
+:root {
+  /* 主品牌色 */
+  --theme-primary: #FF5A50;
+  --theme-primary-dark: #FF6B60;
+  --theme-primary-hover: #E84A3F;
+  --theme-primary-dark-hover: #FF8A80;
+  
+  /* 背景色 */
+  --theme-primary-light: #FFF5F4;
+  --theme-primary-light-dark: rgba(255, 90, 80, 0.1);
+  
+  /* 透明度变体 */
+  --theme-opacity-subtle: 0.08;
+  --theme-opacity-light: 0.1;
+  --theme-opacity-medium: 0.12;
+  --theme-opacity-strong: 0.15;
+  --theme-opacity-darker: 0.18;
+  --theme-opacity-outline: 0.2;
+  --theme-opacity-shadow: 0.25;
+  --theme-opacity-overlay: 0.3;
+  
+  /* 阴影 */
+  --theme-shadow-default: 0 1px 6px rgba(32, 33, 36, 0.28);
+  --theme-shadow-hover: 0 2px 8px rgba(32, 33, 36, 0.3);
+  --theme-shadow-focus: 0 2px 8px rgba(255, 90, 80, 0.25);
+  --theme-shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+.dark {
+  /* 深色模式阴影 */
+  --theme-shadow-default: 0 1px 6px rgba(0, 0, 0, 0.4);
+  --theme-shadow-hover: 0 2px 8px rgba(0, 0, 0, 0.5);
+  --theme-shadow-focus: 0 4px 12px rgba(255, 107, 96, 0.3);
+  --theme-shadow-card: 0 10px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* ==================== 统一交互样式类 ==================== */
+
+/* 按钮悬停效果 - 统一所有顶部工具栏按钮 */
+.btn-hover-primary {
+  transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.btn-hover-primary:hover {
+  color: var(--theme-primary);
+  background-color: var(--theme-primary-light);
+}
+
+.dark .btn-hover-primary:hover {
+  color: var(--theme-primary-dark);
+  background-color: var(--theme-primary-light-dark);
+}
+
+/* 链接悬停效果 */
+.link-hover-primary {
+  transition: color 0.2s ease;
+}
+
+.link-hover-primary:hover {
+  color: var(--theme-primary);
+}
+
+.dark .link-hover-primary:hover {
+  color: var(--theme-primary-dark);
+}
+
+/* 卡片悬停效果 */
+.card-hover-primary {
+  transition: border-color 0.3s ease, box-shadow 0.3s ease, transform 0.3s ease;
+}
+
+.card-hover-primary:hover {
+  border-color: var(--theme-primary);
+  box-shadow: var(--theme-shadow-card);
+  transform: translateY(-4px) scale(1.02);
+}
+
+.dark .card-hover-primary:hover {
+  border-color: var(--theme-primary-dark);
+  box-shadow: var(--theme-shadow-card);
+  transform: translateY(-4px) scale(1.02);
+}
+
+/* 搜索建议项悬停效果 */
+.suggestion-hover-primary {
+  transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.suggestion-hover-primary:hover {
+  background-color: rgba(255, 90, 80, var(--theme-opacity-subtle));
+  transform: translateX(2px);
+}
+
+.dark .suggestion-hover-primary:hover {
+  background-color: rgba(255, 107, 96, var(--theme-opacity-medium));
+}
+
+/* 搜索建议项激活状态 */
+.suggestion-active-primary {
+  background-color: rgba(255, 90, 80, var(--theme-opacity-medium));
+  outline: 2px solid rgba(255, 90, 80, var(--theme-opacity-outline));
+  outline-offset: -2px;
+}
+
+.dark .suggestion-active-primary {
+  background-color: rgba(255, 107, 96, var(--theme-opacity-darker));
+  outline-color: rgba(255, 107, 96, var(--theme-opacity-overlay));
+}
+
+/* 高亮文本样式 */
+.text-highlight-primary {
+  font-weight: 600;
+  color: var(--theme-primary);
+  background-color: rgba(255, 90, 80, var(--theme-opacity-medium));
+  padding: 0 3px;
+  border-radius: 3px;
+}
+
+.dark .text-highlight-primary {
+  color: var(--theme-primary-dark);
+  background-color: rgba(255, 107, 96, var(--theme-opacity-strong));
+}
+
+/* 主要按钮样式 */
+.btn-primary {
+  background-color: var(--theme-primary);
+  color: white;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.btn-primary:hover {
+  background-color: var(--theme-primary-hover);
+  box-shadow: 0 2px 4px rgba(255, 90, 80, 0.3);
+}
+
+.dark .btn-primary {
+  background-color: var(--theme-primary);
+}
+
+.dark .btn-primary:hover {
+  background-color: var(--theme-primary-hover);
+}
+
+/* 统计徽章样式 */
+.stats-badge {
+  background-color: var(--theme-primary-light);
+  color: var(--theme-primary);
+}
+
+.dark .stats-badge {
+  background-color: var(--theme-primary-light-dark);
+  color: var(--theme-primary-dark);
+}
+
+/* 工具卡片样式（与 card-hover-primary 配合使用） */
+.tool-card {
+  /* 基础样式由 card-hover-primary 提供 */
+}
+
+.tool-card-indicator {
+  background: linear-gradient(to bottom right, var(--theme-primary), var(--theme-primary-dark), var(--theme-primary));
+  box-shadow: 0 1px 2px rgba(255, 90, 80, 0.5);
+  border: 1px solid rgba(255, 90, 80, var(--theme-opacity-outline));
+}
+
+.tool-card-title {
+  color: inherit;
+}
+
+.tool-card:hover .tool-card-title {
+  color: var(--theme-primary);
+}
+
+.dark .tool-card:hover .tool-card-title {
+  color: var(--theme-primary-dark);
+}
+
+.tool-card-button {
+  color: inherit;
+}
+
+.tool-card-button:hover {
+  color: var(--theme-primary);
+  background-color: var(--theme-primary-light);
+}
+
+.dark .tool-card-button:hover {
+  color: var(--theme-primary-dark);
+  background-color: var(--theme-primary-light-dark);
+}
+
+/* 分页按钮样式 */
+.pagination-btn {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.pagination-btn:hover:not(:disabled) {
+  background-color: var(--theme-primary-light);
+  border-color: var(--theme-primary);
+  color: var(--theme-primary);
+}
+
+.dark .pagination-btn:hover:not(:disabled) {
+  background-color: var(--theme-primary-light-dark);
+  border-color: var(--theme-primary-dark);
+  color: var(--theme-primary-dark);
+}
+
+/* 空状态图标样式 */
+.empty-state-icon {
+  background-color: var(--theme-primary-light);
+  color: var(--theme-primary);
+}
+
+.dark .empty-state-icon {
+  background-color: var(--theme-primary-light-dark);
+  color: var(--theme-primary-dark);
+}
+
+/* 搜索建议容器阴影 */
+.search-suggestions-container {
+  box-shadow: var(--theme-shadow-card);
+}

@@ -1,7 +1,8 @@
 ---
 // src/layouts/Layout.astro
 import "../styles/global.css";
-import { getLocaleFromRequest, t } from '../i18n/locales';
+import "../styles/theme.css";
+import { getLocaleFromAstro, t } from '../i18n/locales';
 
 interface Props {
   title?: string;
@@ -17,7 +18,12 @@ const {
   type = "website"
 } = Astro.props;
 
-const locale = getLocaleFromRequest(Astro.request);
+// 使用安全函数获取语言，避免在预渲染模式下访问 Astro.request
+// 优先从 Cookie 读取（如果用户之前设置过），否则从 Accept-Language 或默认值
+let locale = getLocaleFromAstro();
+
+// 如果服务端检测到的语言与客户端可能不一致，我们需要在客户端同步
+// 但这里我们只能使用服务端检测到的语言进行初始渲染
 const htmlLang = locale === 'zh' ? 'zh-CN' : 'en';
 
 // 默认描述（根据语言）
@@ -44,6 +50,53 @@ const enUrl = canonicalUrl;
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    
+    {/* 内联脚本：在页面渲染前同步 Cookie 和 localStorage，避免语言闪烁 */}
+    <script is:inline define:vars={{ locale }}>
+      (function() {
+        try {
+          // 统一的 Cookie 解析函数
+          function parseCookies() {
+            return document.cookie.split(';').reduce((acc, cookie) => {
+              const [key, value] = cookie.trim().split('=');
+              if (key) {
+                try {
+                  acc[decodeURIComponent(key)] = decodeURIComponent(value || '');
+                } catch (e) {
+                  acc[key] = value || '';
+                }
+              }
+              return acc;
+            }, {});
+          }
+          
+          // 从 localStorage 读取用户偏好
+          const savedLocale = localStorage.getItem('locale');
+          const cookies = parseCookies();
+          
+          if (savedLocale === 'zh' || savedLocale === 'en') {
+            // localStorage 有值
+            // 1. 同步到 Cookie（如果不同）
+            if (cookies.locale !== savedLocale) {
+              document.cookie = `locale=${savedLocale}; path=/; max-age=31536000; SameSite=Lax`;
+            }
+            
+            // 2. 如果服务端语言与客户端不一致，立即更新 HTML lang 属性
+            if (savedLocale !== locale) {
+              document.documentElement.lang = savedLocale === 'zh' ? 'zh-CN' : 'en';
+            }
+          } else if (cookies.locale === 'zh' || cookies.locale === 'en') {
+            // localStorage 没有值，但 Cookie 有值，同步到 localStorage
+            localStorage.setItem('locale', cookies.locale);
+            if (cookies.locale !== locale) {
+              document.documentElement.lang = cookies.locale === 'zh' ? 'zh-CN' : 'en';
+            }
+          }
+        } catch (e) {
+          // 忽略错误
+        }
+      })();
+    </script>
     
     {/* 基础 SEO Meta 标签 */}
     <title>{title}</title>
@@ -88,14 +141,11 @@ const enUrl = canonicalUrl;
     {/* Favicon 和图标 */}
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <link rel="apple-touch-icon" href="/logo.png" />
-    <link rel="manifest" href="/manifest.json" />
+    <!-- <link rel="manifest" href="/manifest.json" /> -->
     
     {/* DNS 预解析和预连接 - 性能优化 */}
     <link rel="dns-prefetch" href="https://cdn.jsdelivr.net" />
-    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin="anonymous" />
-    
-    {/* 预加载关键资源 */}
-    <link rel="preload" href="https://cdn.jsdelivr.net/npm/fuse.js@7.1.0/dist/fuse.min.js" as="script" crossorigin="anonymous" />
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin />
     
     {/* 主题颜色 */}
     <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)" />
@@ -163,7 +213,7 @@ const enUrl = canonicalUrl;
           }
         } catch (e) {
           // 如果 localStorage 不可用，使用默认亮色主题
-          console.warn('Theme initialization failed:', e);
+          // 静默失败，不影响页面加载
         }
       })();
     </script>

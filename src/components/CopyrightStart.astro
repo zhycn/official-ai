@@ -1,5 +1,6 @@
 ---
 // 底部版权信息组件
+import { COLORS } from '../utils/constants';
 const year = new Date().getFullYear();
 const copyright = 'Official AI';
 ---
@@ -8,6 +9,6 @@ const copyright = 'Official AI';
     <li>
         <span class="text-gray-500 dark:text-gray-400">©</span>
         <span class="text-gray-500 dark:text-gray-400">{year}</span> 
-        <a href="/" class="text-gray-500 dark:text-gray-400 hover:text-[#FF5A50] dark:hover:text-[#FF5A50]">{copyright}</a>
+        <a href="/" class="copyright-link link-hover-primary text-gray-500 dark:text-gray-400">{copyright}</a>
     </li>
 </ul>
